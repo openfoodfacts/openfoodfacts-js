@@ -6,6 +6,10 @@ on:
   issues:
     types: [opened, transferred]
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   ShowAndLabelTopIssues:
     name: Display and label top issues.
