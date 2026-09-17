@@ -504,6 +504,29 @@ describe("OpenFoodFacts", () => {
       expect(body.get("generic_name_fr")).toBe("Pâtes Biologiques");
     });
 
+    it("should include language-specific parameters even when they are empty and not in languages_codes", async () => {
+      mockFetch.mockResolvedValue(TestUtils.mockResponse({}, true, 200));
+
+      const productWithDeletedLang = {
+        ...baseProductData,
+        languages_codes: { en: 1 },
+        product_name_fr: "",
+        ingredients_text_fr: "",
+        generic_name_fr: "",
+      };
+
+      await productsApi.addOrEditProductV2(
+        productWithDeletedLang,
+        testCredentials,
+      );
+
+      const body = mockFetch.mock.calls[0]?.[1]?.body as FormData;
+      expect(body.get("product_name_en")).toBe("Test Product");
+      expect(body.get("product_name_fr")).toBe("");
+      expect(body.get("ingredients_text_fr")).toBe("");
+      expect(body.get("generic_name_fr")).toBe("");
+    });
+
     it("should return false when request fails", async () => {
       mockFetch.mockResolvedValue(TestUtils.mockResponse({}, false, 400));
 
