@@ -75,6 +75,8 @@ import type {
   PackagingComponent,
   PackagingTaxonomyTag,
   TaxonomySuggestionsQuery,
+  TagKnowledgePanelsQuery,
+  TagKnowledgePanelsResponse,
 } from "./off-v3.js";
 export type {
   ProductDataType,
@@ -87,6 +89,8 @@ export type {
   PackagingComponent,
   PackagingTaxonomyTag,
   TaxonomySuggestionsQuery,
+  TagKnowledgePanelsQuery,
+  TagKnowledgePanelsResponse,
 };
 
 import { VERSION } from "./version.js";
@@ -514,6 +518,19 @@ export class OpenFoodFacts {
     barcode: string,
     query?: Omit<ProductQueryV3, "fields"> & { fields?: Key },
   ) => this.apiv3.getProductV3(barcode, query);
+
+  /**
+   * Fetch knowledge panels for a tag
+   * @param tagtype - Type of the tag
+   * @param tagOrTagId - Tag name (e.g. "yogurts") or tag id (e.g. "en:yogurts")
+   * @param query - Optional query parameters for language and country localization
+   * @returns A promise that resolves to the tag knowledge panels response
+   */
+  getTagKnowledgePanels = (
+    tagtype: string,
+    tagOrTagId: string,
+    query?: TagKnowledgePanelsQuery,
+  ) => this.apiv3.getTagKnowledgePanels(tagtype, tagOrTagId, query);
 
   /**
    * Adds or edits a product using the V2 API

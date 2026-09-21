@@ -32,6 +32,13 @@ export type TaxonomySuggestionsQuery = NonNullable<
   operations["get-api-v3-taxonomy_suggestions-taxonomy"]["parameters"]["query"]
 >;
 
+export type TagKnowledgePanelsQuery = NonNullable<
+  operations["get-api-v3-tag-tagtype-tag_or_tagid"]["parameters"]["query"]
+>;
+
+export type TagKnowledgePanelsResponse =
+  operations["get-api-v3-tag-tagtype-tag_or_tagid"]["responses"]["200"]["content"]["application/json"];
+
 export type ImageSelectionData = NonNullable<
   NonNullable<
     operations["patch-api-v3-product-code"]["requestBody"]
@@ -242,6 +249,26 @@ export class ProductOpenerApiV3 {
   async getTaxonomySuggestions(query: TaxonomySuggestionsQuery) {
     return this.client.GET("/api/v3/taxonomy_suggestions", {
       params: { query },
+    });
+  }
+
+  /**
+   * Fetch knowledge panels for a tag
+   * @param tagtype - Type of the tag
+   * @param tagOrTagId - Tag name (e.g. "yogurts") or tag id (e.g. "en:yogurts")
+   * @param query - Optional query parameters for language and country localization
+   * @returns A promise that resolves to the tag knowledge panels response
+   */
+  async getTagKnowledgePanels(
+    tagtype: string,
+    tagOrTagId: string,
+    query?: TagKnowledgePanelsQuery,
+  ) {
+    return this.client.GET("/api/v3/tag/{tagtype}/{tag_or_tagid}", {
+      params: {
+        path: { tagtype, tag_or_tagid: tagOrTagId },
+        query,
+      },
     });
   }
 

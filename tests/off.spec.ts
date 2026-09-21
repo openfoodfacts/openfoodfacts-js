@@ -275,6 +275,77 @@ describe("OpenFoodFacts", () => {
     });
   });
 
+  describe("getTagKnowledgePanels", () => {
+    it("should fetch tag knowledge panels with path parameters", async () => {
+      const mockData = {
+        status: "success",
+        status_verbose: "category found",
+        tagtype: "categories",
+        tagid: "en:cheeses",
+        tag: {
+          tagid: "en:cheeses",
+          tagtype: "categories",
+          knowledge_panels: {},
+        },
+      };
+
+      mockV3Success(mockData);
+
+      const { data, error } = await productsApi.getTagKnowledgePanels(
+        "categories",
+        "en:cheeses",
+      );
+
+      expect(error).toBeUndefined();
+      expect(data).toBeDefined();
+      expect(data).toEqual(mockData);
+      expect(productsApi.apiv3.client.GET).toHaveBeenCalledWith(
+        "/api/v3/tag/{tagtype}/{tag_or_tagid}",
+        {
+          params: {
+            path: { tagtype: "categories", tag_or_tagid: "en:cheeses" },
+            query: undefined,
+          },
+        },
+      );
+    });
+
+    it("should fetch tag knowledge panels with query parameters", async () => {
+      const mockData = {
+        status: "success",
+        status_verbose: "category found",
+        tagtype: "categories",
+        tagid: "en:cheeses",
+        tag: {
+          tagid: "en:cheeses",
+          tagtype: "categories",
+          knowledge_panels: {},
+        },
+      };
+
+      mockV3Success(mockData);
+
+      const { data, error } = await productsApi.getTagKnowledgePanels(
+        "categories",
+        "en:cheeses",
+        { lc: "fr", cc: "fr" },
+      );
+
+      expect(error).toBeUndefined();
+      expect(data).toBeDefined();
+      expect(data).toEqual(mockData);
+      expect(productsApi.apiv3.client.GET).toHaveBeenCalledWith(
+        "/api/v3/tag/{tagtype}/{tag_or_tagid}",
+        {
+          params: {
+            path: { tagtype: "categories", tag_or_tagid: "en:cheeses" },
+            query: { lc: "fr", cc: "fr" },
+          },
+        },
+      );
+    });
+  });
+
   describe("getProductV2", () => {
     it("should return product details for a valid barcode", async () => {
       const mockData = {
