@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0-alpha.35](https://github.com/openfoodfacts/openfoodfacts-js/compare/v2.0.0-alpha.35...v2.1.0-alpha.35) (2026-09-22)
+
+
+### Features
+
+* **v3:** add support for tag knowledge panels ([#955](https://github.com/openfoodfacts/openfoodfacts-js/issues/955)) ([fdd19df](https://github.com/openfoodfacts/openfoodfacts-js/commit/fdd19dfb952a7ef02c35f3c6975a894f629a5c4c))
+
 ## [2.0.0-alpha.35](https://github.com/openfoodfacts/openfoodfacts-js/compare/v2.0.0-alpha.34...v2.0.0-alpha.35) (2026-09-03)
 
 
