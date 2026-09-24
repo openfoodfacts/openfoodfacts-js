@@ -145,7 +145,21 @@ export class ProductOpenerApiV2 {
   ): Promise<boolean> {
     const url = `${this.baseUrl}/cgi/product_jqm2.pl`;
 
-    const languageCodes = Object.keys(product.languages_codes || {});
+    // Scan product keys to catch languages that were removed from `languages_codes` but still present as empty-string overrides
+    const languageCodes = Array.from(
+      new Set([
+        ...Object.keys(product.languages_codes || {}),
+        ...Object.keys(product)
+          .map((key) =>
+            /^(?:product_name|ingredients_text|generic_name)_([a-z]{2,3})$/.exec(
+              key,
+            ),
+          )
+          .filter((match): match is RegExpExecArray => !!match)
+          .map((match) => match[1]),
+      ]),
+    );
+
     const productNames = languageCodes.reduce(
       (acc, lang) => {
         const productName = getProductNameInLang(product, lang);
