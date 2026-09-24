@@ -53,6 +53,8 @@ import type {
   ProductAttribute as ProductAttributeV2,
   AttributeGroups as AttributeGroupV2,
   ProductAttribute as AttributeV2,
+  Nutriments,
+  NutrientUnit,
 } from "./off-v2.js";
 export type {
   SearchQueryV2,
@@ -61,6 +63,8 @@ export type {
   ProductAttributeV2,
   AttributeGroupV2,
   AttributeV2,
+  Nutriments,
+  NutrientUnit,
 };
 
 // Type-only imports and re-exports for off-v3.js
