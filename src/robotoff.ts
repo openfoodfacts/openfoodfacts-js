@@ -98,12 +98,15 @@ export class Robotoff {
     return this.raw.GET("/insights", { params: { query } });
   }
 
-  // TODO: replace any with proper type
-  // ATM not specifying the type makes tsc fail sometimes
-  async loadLogo(logoId: string): Promise<any> {
-    // @ts-expect-error TODO: still not documented
-    const result = await this.raw.GET("/images/logos/{logoId}", {
-      params: { path: { logoId } },
+  /**
+   * Fetches the details of a logo by its ID.
+   *
+   * @param {number} logoId - The ID of the logo to load.
+   * @returns A promise that resolves to the data from the logo details endpoint.
+   */
+  async loadLogo(logoId: number) {
+    const result = await this.raw.GET("/images/logos/{logo_id}", {
+      params: { path: { logo_id: logoId } },
     });
     return result.data;
   }
