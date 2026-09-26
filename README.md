@@ -53,6 +53,21 @@ const client = new OpenFoodFacts(fetch);
 
 - See the [SDK auto generated documentation](https://openfoodfacts.github.io/openfoodfacts-js/) for a complete list of available methods and classes.
 
+### Other projects
+
+The client also works with [Open Beauty Facts][obf], [Open Pet Food Facts][opff] and [Open Products Facts][opf]:
+
+```ts
+import {
+  OpenFoodFacts,
+  BackendType,
+} from "@openfoodfacts/openfoodfacts-nodejs";
+
+const client = new OpenFoodFacts(fetch, { type: BackendType.OBF });
+```
+
+Passing a project `host` has the same effect. Some interfaces, such as NutriPatrol and Open Prices, only support OFF.
+
 ## Development
 
 ### Prerequisites
@@ -87,3 +102,6 @@ When submitting a PR, please use the [angular commit guideline](https://github.c
 - Make sure you comply with the OdBL licence, mentioning the Source of your data, and ensuring to avoid combining non free data you can't release legally as open data. Another requirement is contributing back any product you add using this SDK.
 
 [off-api]: https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/
+[obf]: https://world.openbeautyfacts.org/
+[opff]: https://world.openpetfoodfacts.org/
+[opf]: https://world.openproductsfacts.org/
