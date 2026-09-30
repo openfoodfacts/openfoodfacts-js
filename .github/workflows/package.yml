@@ -29,6 +29,8 @@ on:
         type: string
         default: "latest"
 
+permissions: {}
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -57,7 +59,9 @@ jobs:
         run: corepack enable
 
       - name: Install dependencies
-        run: yarn install --immutable
+        env:
+          YARN_ENABLE_SCRIPTS: "false"
+        run: yarn install --immutable --mode=skip-build
 
       - name: Build project
         run: yarn build
