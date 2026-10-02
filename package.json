@@ -62,7 +62,7 @@
     "openapi-typescript": "^7.6.1",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
-    "tsdown": "^0.22.0",
+    "tsdown": "^0.23.0",
     "typedoc": "^0.28.19",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.30.1",
