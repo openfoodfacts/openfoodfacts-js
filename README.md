@@ -29,18 +29,12 @@ Import the SDK in your project and create a client instance:
 ```ts
 import { OpenFoodFacts } from "@openfoodfacts/openfoodfacts-nodejs";
 
-// if you're on the browser, you can pass the fetch function as a parameter
-const client = new OpenFoodFacts(window.fetch);
-// or if you're on Node.js, you can pass the global fetch function
+// Uses the native fetch available in modern Node.js and browsers.
 const client = new OpenFoodFacts(globalThis.fetch);
-// or if you're using a custom fetch implementation
-import fetch from "node-fetch";
-
-const client = new OpenFoodFacts(fetch);
 
 (async () => {
   // then you can use the client to access the Open Food Facts API
-  const { data, error } = await client.getProductV3("5000112546415");
+  const { data, error } = await client.getProduct("5000112546415");
   if (!data) {
     console.error("Error fetching product:", error);
     return;
@@ -48,6 +42,54 @@ const client = new OpenFoodFacts(fetch);
   console.log("Product data:", data);
 })();
 ```
+
+### Universal barcode lookup and configuration
+
+`getProduct()` uses API v3 and requests `product_type=all` by default, even
+when the constructor receives no options. The server can identify the product
+type from the barcode and redirect to the appropriate platform. Per-call query
+values override configured defaults.
+
+```ts
+const client = new OpenFoodFacts(globalThis.fetch, {
+  locale: { language: "it", country: "it" },
+  app: { name: "MyApp", version: "1.0", contact: "https://example.com" },
+  defaults: { productType: "all" },
+  endpoints: {
+    // Optional overrides, for example when using a proxy:
+    products: "https://world.openfoodfacts.org",
+  },
+});
+
+const { data, error } = await client.getProduct("5000112546415");
+// Restrict one request when the product type is already known:
+const food = await client.getProduct("5000112546415", {
+  product_type: "food",
+});
+```
+
+`resolveConfig()` is exported for inspecting the immutable resolved settings.
+Each service uses its explicit endpoint override, or its production default
+when omitted. To use the staging product API, set
+`endpoints.products` to `https://world.openfoodfacts.net`. This changes only
+the product endpoint; other services retain their production defaults unless
+explicitly overridden.
+
+For endpoint overrides, `images` is the full image root ending in
+`/images/products`, `taxonomies` is the static host, and `robotoff` is the full
+API base ending in `/api/v1`. Other service endpoints are service roots. These
+URLs back `getProductImageUrl`, taxonomy methods, and the `robotoff`,
+`nutriPatrol`, `searchApi`, `pricesApi`, `folksonomyApi`, and `facetsKp` clients.
+`facetsKp` accesses the facets knowledge panel service; it is separate from
+the product facet methods.
+
+This configuration replaces the previous constructor options: use
+`endpoints.products` instead of `host` or `type`, and `locale.country` /
+`locale.language` instead of the top-level locale options. Use `getProduct()`
+instead of `getProductV2()` or `getProductV3()`. Version-specific clients remain
+available through `apiv2` and `apiv3` for explicit low-level access. Auxiliary clients and static
+taxonomy downloads share the application identity header wrapper; the product
+API access token is applied only to product-server requests.
 
 - See the [Open Food Facts API documentation][off-api] for more details on the API endpoints.
 

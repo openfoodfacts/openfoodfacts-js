@@ -1,112 +1,103 @@
 import { MockedFunction } from "vitest";
 import OpenFoodFacts from "../src";
-import { BackendType } from "../src/consts";
+import { resolveConfig } from "../src";
 
 describe("OpenFoodFacts Constructor", () => {
   let mockFetch: MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    mockFetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({}),
-    } as Response);
+    mockFetch = vi.fn().mockResolvedValue(new Response("{}"));
   });
 
-  describe("Options validation", () => {
-    it("should throw error when both host and country are provided", () => {
-      expect(() => {
-        new OpenFoodFacts(mockFetch, {
-          host: "https://example.com",
-          country: "us",
-        });
-      }).toThrow(
-        "You must provide either `host`, `type`, or `country`, not multiple.",
+  describe("Configuration", () => {
+    it("resolves production defaults", () => {
+      expect(resolveConfig()).toMatchObject({
+        locale: { language: "en", country: "world" },
+        defaults: { productType: "all" },
+        endpoints: {
+          products: "https://world.openfoodfacts.org",
+          images: "https://images.openfoodfacts.org/images/products",
+        },
+      });
+    });
+
+    it("applies locale, product type, and endpoint overrides", () => {
+      const config = resolveConfig({
+        locale: { language: "fr", country: "ca" },
+        defaults: { productType: "beauty" },
+        endpoints: { products: "https://api.example.test/" },
+      });
+      expect(config.locale).toEqual({ language: "fr", country: "ca" });
+      expect(config.defaults.productType).toBe("beauty");
+      expect(config.endpoints.products).toBe("https://api.example.test");
+      expect(Object.isFrozen(config)).toBe(true);
+      expect(Object.isFrozen(config.endpoints)).toBe(true);
+    });
+
+    it("rejects invalid endpoints and empty app names", () => {
+      expect(() =>
+        resolveConfig({ endpoints: { products: "not a URL" } }),
+      ).toThrow(/Invalid URL/);
+      expect(() => resolveConfig({ app: { name: " " } })).toThrow(/app.name/);
+    });
+
+    it("uses configured endpoints for product requests", async () => {
+      const client = new OpenFoodFacts(mockFetch, {
+        endpoints: { products: "https://products.example.test" },
+      });
+      await client.getProduct("1234567890123");
+      expect((mockFetch.mock.calls[0][0] as Request).url).toContain(
+        "https://products.example.test",
       );
     });
 
-    it("should throw error when both type and country are provided", () => {
-      expect(() => {
-        new OpenFoodFacts(mockFetch, {
-          type: BackendType.OFF,
-          country: "us",
-        });
-      }).toThrow(
-        "You must provide either `host`, `type`, or `country`, not multiple.",
+    it("routes auxiliary APIs and keeps the product token off taxonomy requests", async () => {
+      const payload = Buffer.from(
+        JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 60 }),
+      ).toString("base64url");
+      const header = Buffer.from(JSON.stringify({ alg: "none" })).toString(
+        "base64url",
       );
-    });
-
-    it("should accept host alone", () => {
-      expect(() => {
-        new OpenFoodFacts(mockFetch, {
-          host: "https://example.com",
-        });
-      }).not.toThrow();
-    });
-
-    it("should accept type alone", () => {
-      expect(() => {
-        new OpenFoodFacts(mockFetch, {
-          type: BackendType.OFF,
-        });
-      }).not.toThrow();
-    });
-
-    it("should accept country alone", () => {
-      expect(() => {
-        new OpenFoodFacts(mockFetch, {
-          country: "fr",
-        });
-      }).not.toThrow();
-    });
-  });
-
-  describe("Base URL creation", () => {
-    it("should use custom host when provided", () => {
+      const token = `${header}.${payload}.`;
+      mockFetch.mockImplementation(() => Promise.resolve(new Response("{}")));
       const client = new OpenFoodFacts(mockFetch, {
-        host: "https://custom.example.com",
+        accessToken: token,
+        endpoints: {
+          taxonomies: "https://static.example.test",
+          robotoff: "https://robot.example.test/api/v1",
+        },
       });
-      // We can't directly access baseUrl, but we can verify it's working by checking the client exists
-      expect(client.apiv2.client).toBeDefined();
-      expect(client.apiv3.client).toBeDefined();
-    });
 
-    it("should create URL from backend type", () => {
-      const client = new OpenFoodFacts(mockFetch, {
-        type: BackendType.OBF,
-      });
-      expect(client.apiv2.client).toBeDefined();
-      expect(client.apiv3.client).toBeDefined();
-    });
+      await client.getTaxo("ingredients");
+      const taxonomyCall = mockFetch.mock.calls[0];
+      const taxonomyUrl =
+        taxonomyCall[0] instanceof Request
+          ? taxonomyCall[0].url
+          : String(taxonomyCall[0]);
+      expect(taxonomyUrl).toContain(
+        "https://static.example.test/data/taxonomies/ingredients.json",
+      );
+      expect((taxonomyCall[1]?.headers as Headers).has("Authorization")).toBe(
+        false,
+      );
 
-    it("should create URL from country", () => {
-      const client = new OpenFoodFacts(mockFetch, {
-        country: "fr",
-      });
-      expect(client.apiv2.client).toBeDefined();
-      expect(client.apiv3.client).toBeDefined();
-    });
-
-    it("should default to world.openfoodfacts.org when no options provided", () => {
-      const client = new OpenFoodFacts(mockFetch);
-      expect(client.apiv2.client).toBeDefined();
-      expect(client.apiv3.client).toBeDefined();
-    });
-
-    it("should handle undefined country gracefully", () => {
-      const client = new OpenFoodFacts(mockFetch, {
-        country: undefined,
-      });
-      expect(client.apiv2.client).toBeDefined();
-      expect(client.apiv3.client).toBeDefined();
+      await client.robotoff.getLogoAnnotations(12345);
+      const robotoffRequest = mockFetch.mock.calls[1][0];
+      const robotoffUrl =
+        robotoffRequest instanceof Request
+          ? robotoffRequest.url
+          : String(robotoffRequest);
+      expect(robotoffUrl).toContain("https://robot.example.test/api/v1/");
     });
   });
 
   describe("User-Agent creation", () => {
     it("should create generic User-Agent by default", async () => {
       const client = new OpenFoodFacts(mockFetch);
-      await client.getAdditives();
+      await client.getProduct("1234567890123");
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.any(String),
+        expect.any(Request),
         expect.objectContaining({
           headers: expect.any(Headers),
         }),
@@ -118,40 +109,16 @@ describe("OpenFoodFacts Constructor", () => {
       expect(userAgent).toMatch(/^OpenFoodFacts - NodeJS \d+\.\d+\.\d+/);
     });
 
-    it("should create backend-specific User-Agent for OBF", async () => {
+    it("should use the configured application identity", async () => {
       const client = new OpenFoodFacts(mockFetch, {
-        type: BackendType.OBF,
+        app: { name: "My App", version: "1.2", contact: "dev@example.test" },
       });
-      await client.getAdditives();
+      await client.getProduct("1234567890123");
 
       const callArgs = mockFetch.mock.calls[0];
       const headers = callArgs[1]?.headers as Headers;
       const userAgent = headers.get("User-Agent");
-      expect(userAgent).toMatch(/^OpenBeautyFacts - NodeJS \d+\.\d+\.\d+/);
-    });
-
-    it("should create backend-specific User-Agent for OPFF", async () => {
-      const client = new OpenFoodFacts(mockFetch, {
-        type: BackendType.OPFF,
-      });
-      await client.getAdditives();
-
-      const callArgs = mockFetch.mock.calls[0];
-      const headers = callArgs[1]?.headers as Headers;
-      const userAgent = headers.get("User-Agent");
-      expect(userAgent).toMatch(/^OpenPetFoodFacts - NodeJS \d+\.\d+\.\d+/);
-    });
-
-    it("should create backend-specific User-Agent for OPF", async () => {
-      const client = new OpenFoodFacts(mockFetch, {
-        type: BackendType.OPF,
-      });
-      await client.getAdditives();
-
-      const callArgs = mockFetch.mock.calls[0];
-      const headers = callArgs[1]?.headers as Headers;
-      const userAgent = headers.get("User-Agent");
-      expect(userAgent).toMatch(/^OpenProductsFacts - NodeJS \d+\.\d+\.\d+/);
+      expect(userAgent).toMatch(/^My App\/1\.2 \(dev@example\.test\) - NodeJS/);
     });
   });
 
@@ -228,13 +195,18 @@ describe("OpenFoodFacts Constructor", () => {
     it("should preserve existing headers when adding User-Agent", async () => {
       const client = new OpenFoodFacts(mockFetch);
 
-      // Test by directly calling the internal fetch with custom headers
-      await (client as any).fetch("test-url", {
-        headers: new Headers({ "Custom-Header": "test-value" }),
+      await client.apiv3.client.GET("/api/v3/product/{code}", {
+        params: { path: { code: "1234567890123" } },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer caller-token",
+        },
       });
 
       const headers = mockFetch.mock.calls[0][1]?.headers as Headers;
-      expect(headers.get("Custom-Header")).toBe("test-value");
+      expect(headers.get("Content-Type")).toBe("application/json");
+      expect(headers.get("Authorization")).toBe("Bearer caller-token");
+      expect(headers.get("User-Agent")).toMatch(/^OpenFoodFacts - NodeJS/);
     });
 
     it("should add Authorization header when token is provided", async () => {
@@ -252,7 +224,7 @@ describe("OpenFoodFacts Constructor", () => {
         accessToken: validToken,
       });
 
-      await client.getAdditives();
+      await client.getProduct("1234567890123");
 
       const headers = mockFetch.mock.calls[0][1]?.headers as Headers;
       expect(headers.get("Authorization")).toBe(`Bearer ${validToken}`);
@@ -279,9 +251,9 @@ describe("OpenFoodFacts Constructor", () => {
       });
 
       // Manually set the token to expired to test runtime behavior
-      (client as any).accessToken = expiredToken;
+      Reflect.set(client, "accessToken", expiredToken);
 
-      await expect(client.getAdditives()).rejects.toThrow(
+      await expect(client.getProduct("1234567890123")).rejects.toThrow(
         "Access token expired and no handler provided to refresh it.",
       );
     });
@@ -295,9 +267,7 @@ describe("OpenFoodFacts Constructor", () => {
       let capturedHeaders: Headers | undefined;
       mockFetch.mockImplementation((_url, options) => {
         capturedHeaders = options?.headers as Headers;
-        return Promise.resolve({
-          json: () => Promise.resolve({}),
-        }) as unknown as Promise<Response>;
+        return Promise.resolve(new Response("{}"));
       });
 
       const onAccessTokenExpired = vi.fn().mockResolvedValue(newToken);
@@ -309,7 +279,7 @@ describe("OpenFoodFacts Constructor", () => {
       // Wait for token to expire
       await new Promise((resolve) => setTimeout(resolve, 1100));
 
-      await client.getAdditives();
+      await client.getProduct("1234567890123");
 
       expect(onAccessTokenExpired).toHaveBeenCalled();
       expect(capturedHeaders?.get("Authorization")).toBe(`Bearer ${newToken}`);
@@ -319,15 +289,19 @@ describe("OpenFoodFacts Constructor", () => {
       const validToken = mockJWT({ exp: Math.floor(Date.now() / 1000) + 60 });
       const client = new OpenFoodFacts(mockFetch, {
         accessToken: validToken,
-        onAccessTokenExpired: () => Promise.resolve(null as any),
+        onAccessTokenExpired: () => Promise.resolve(null as unknown as string),
       });
 
       // Manually set the token to expired
-      (client as any).accessToken = mockJWT({
-        exp: Math.floor(Date.now() / 1000) - 60,
-      });
+      Reflect.set(
+        client,
+        "accessToken",
+        mockJWT({
+          exp: Math.floor(Date.now() / 1000) - 60,
+        }),
+      );
 
-      await expect(client.getAdditives()).rejects.toThrow(
+      await expect(client.getProduct("1234567890123")).rejects.toThrow(
         "onAccessTokenExpired handler did not return a new access token.",
       );
     });
@@ -336,7 +310,7 @@ describe("OpenFoodFacts Constructor", () => {
   describe("Client initialization", () => {
     it("should initialize rawv2 client", () => {
       const client = new OpenFoodFacts(mockFetch, {
-        host: "https://test.example.com",
+        endpoints: { products: "https://test.example.com" },
       });
 
       expect(client.apiv2.client).toBeDefined();
@@ -347,10 +321,10 @@ describe("OpenFoodFacts Constructor", () => {
       expect(client.robotoff).toBeDefined();
     });
 
-    it("should pass original fetch to robotoff (not wrapped)", () => {
+    it("should reuse the lazily initialized robotoff client", () => {
       const client = new OpenFoodFacts(mockFetch);
-      expect(client.robotoff).toBeDefined();
-      // The robotoff client should use the original fetch, not the wrapped one
+      const robotoff = client.robotoff;
+      expect(client.robotoff).toBe(robotoff);
     });
   });
 
@@ -367,17 +341,17 @@ describe("OpenFoodFacts Constructor", () => {
 
       const validToken = mockJWT({ exp: Math.floor(Date.now() / 1000) + 60 });
       const client = new OpenFoodFacts(mockFetch, {
-        type: BackendType.OBF,
+        app: { name: "Beauty Client" },
         accessToken: validToken,
         onAccessTokenExpired: () => Promise.resolve("new-token"),
       });
 
       expect(client.apiv2.client).toBeDefined();
 
-      await client.getAdditives();
+      await client.getProduct("1234567890123");
 
       const headers = mockFetch.mock.calls[0][1]?.headers as Headers;
-      expect(headers.get("User-Agent")).toMatch(/^OpenBeautyFacts - NodeJS/);
+      expect(headers.get("User-Agent")).toMatch(/^Beauty Client - NodeJS/);
       expect(headers.get("Authorization")).toBe(`Bearer ${validToken}`);
     });
   });

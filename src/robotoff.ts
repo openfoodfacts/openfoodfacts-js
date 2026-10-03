@@ -51,10 +51,17 @@ export class Robotoff {
 
   constructor(
     fetch: FetchFn,
-    options: { baseUrl: string } = { baseUrl: DEFAULT_ROBOTOFF_API_URL },
+    options: { baseUrl?: string; apiUrl?: string } = {
+      baseUrl: DEFAULT_ROBOTOFF_API_URL,
+    },
   ) {
     this.fetch = fetch;
-    this.baseUrl = new URL("/api/v1", options.baseUrl).toString();
+    this.baseUrl =
+      options.apiUrl ??
+      new URL(
+        "/api/v1",
+        options.baseUrl ?? DEFAULT_ROBOTOFF_API_URL,
+      ).toString();
     this.raw = createClient<paths>({
       fetch: this.fetch,
       baseUrl: this.baseUrl,

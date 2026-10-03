@@ -16,7 +16,7 @@ describe("JWT tokens", () => {
 
   it("should error on numeric jwt", () => {
     expect(() => {
-      // @ts-expect-error
+      // @ts-expect-error intentionally pass a numeric token to test runtime validation.
       new OpenFoodFacts(fetch, { accessToken: 1234 });
     }).toThrow("Access token must be a string.");
   });
@@ -58,9 +58,7 @@ describe("JWT tokens", () => {
       .fn()
       .mockImplementation((url: string, options?: { headers?: Headers }) => {
         capturedHeaders = options?.headers;
-        return Promise.resolve({
-          json: () => Promise.resolve({}),
-        });
+        return Promise.resolve(new Response("{}"));
       });
 
     const onAccessTokenExpired = vi.fn().mockResolvedValue(newToken);
@@ -72,9 +70,9 @@ describe("JWT tokens", () => {
     // wait for the token to expire
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    await client.getAdditives();
+    await client.getProduct("1234567890123");
     expect(onAccessTokenExpired).toHaveBeenCalled();
-    expect(fetch).toHaveBeenCalledWith(expect.any(String), expect.any(Object));
+    expect(fetch).toHaveBeenCalledWith(expect.any(Request), expect.any(Object));
     expect(capturedHeaders).toBeInstanceOf(Headers);
     expect(capturedHeaders!.get("Authorization")).toBe(`Bearer ${newToken}`);
   });

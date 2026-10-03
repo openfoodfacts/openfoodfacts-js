@@ -21,10 +21,18 @@ describe("OpenFoodFacts", () => {
   const mockFile = new File(["test"], "test.jpg", { type: "image/jpeg" });
 
   // Helper functions
-  const mockV2Success = (data: any) =>
-    vi.spyOn(productsApi.apiv2.client, "GET").mockResolvedValue({ data });
-  const mockV3Success = (data: any) =>
-    vi.spyOn(productsApi.apiv3.client, "GET").mockResolvedValue({ data });
+  const mockV2Success = (data: unknown) =>
+    vi
+      .spyOn(productsApi.apiv2.client, "GET")
+      .mockResolvedValue({ data } as unknown as Awaited<
+        ReturnType<typeof productsApi.apiv2.client.GET>
+      >);
+  const mockV3Success = (data: unknown) =>
+    vi
+      .spyOn(productsApi.apiv3.client, "GET")
+      .mockResolvedValue({ data } as unknown as Awaited<
+        ReturnType<typeof productsApi.apiv3.client.GET>
+      >);
 
   const mockV2Error = (error: Error) =>
     vi.spyOn(productsApi.apiv2.client, "GET").mockRejectedValue(error);
@@ -33,7 +41,7 @@ describe("OpenFoodFacts", () => {
   //const mockV3Error = (error: Error) =>
   //  vi.spyOn(productsApi.apiv3.client, "GET").mockRejectedValue(error);
 
-  const mockFetchSuccess = (data: any) =>
+  const mockFetchSuccess = (data: unknown) =>
     mockFetch.mockResolvedValue(TestUtils.mockResponse(data, true, 200));
 
   // Uncomment if needed
@@ -41,8 +49,8 @@ describe("OpenFoodFacts", () => {
 
   beforeEach(() => {
     mockFetch = vi.fn();
-    productsApi = new OpenFoodFacts(mockFetch as any, {
-      host: "https://world.openfoodfacts.org",
+    productsApi = new OpenFoodFacts(mockFetch as unknown as typeof fetch, {
+      endpoints: { products: "https://world.openfoodfacts.org" },
     });
   });
 
@@ -59,7 +67,7 @@ describe("OpenFoodFacts", () => {
 
     it("should initialize with custom options", () => {
       const customApi = new OpenFoodFacts(mockFetch, {
-        country: "france",
+        locale: { country: "fr" },
       });
 
       expect(customApi).toBeInstanceOf(OpenFoodFacts);
@@ -217,7 +225,7 @@ describe("OpenFoodFacts", () => {
     });
   });
 
-  describe("getProductV3", () => {
+  describe("getProduct", () => {
     it("should return product details for a valid barcode and fields", async () => {
       const mockData = {
         status: "success",
@@ -229,7 +237,7 @@ describe("OpenFoodFacts", () => {
 
       mockV3Success(mockData);
 
-      const { data, error } = await productsApi.getProductV3(testBarcode, {
+      const { data, error } = await productsApi.getProduct(testBarcode, {
         fields: ["product_name", "brands"],
       });
 
@@ -241,7 +249,12 @@ describe("OpenFoodFacts", () => {
         {
           params: {
             path: { code: testBarcode },
-            query: { fields: "product_name,brands" },
+            query: {
+              product_type: "all",
+              lc: "en",
+              cc: "world",
+              fields: "product_name,brands",
+            },
           },
         },
       );
@@ -250,7 +263,7 @@ describe("OpenFoodFacts", () => {
     it("should return product details without specific fields", async () => {
       mockV3Success(productV3MockData);
 
-      const { data, error } = await productsApi.getProductV3(testBarcodeV3);
+      const { data, error } = await productsApi.getProduct(testBarcodeV3);
 
       expect(error).toBeUndefined();
 
@@ -263,7 +276,12 @@ describe("OpenFoodFacts", () => {
         {
           params: {
             path: { code: testBarcodeV3 },
-            query: { fields: undefined },
+            query: {
+              product_type: "all",
+              lc: "en",
+              cc: "world",
+              fields: undefined,
+            },
           },
         },
       );
@@ -304,7 +322,7 @@ describe("OpenFoodFacts", () => {
         {
           params: {
             path: { tagtype: "categories", tag_or_tagid: "en:cheeses" },
-            query: undefined,
+            query: { lc: "en" },
           },
         },
       );
@@ -354,7 +372,7 @@ describe("OpenFoodFacts", () => {
 
       mockV2Success(mockData);
 
-      const { data, error } = await productsApi.getProductV2(testBarcode);
+      const { data, error } = await productsApi.apiv2.getProductV2(testBarcode);
 
       expect(error).toBeUndefined();
       expect(data).toBeDefined();
@@ -371,7 +389,7 @@ describe("OpenFoodFacts", () => {
     it("should return null when product not found", async () => {
       mockV2Success({ product: null });
 
-      const { data, error } = await productsApi.getProductV2("invalid");
+      const { data, error } = await productsApi.apiv2.getProductV2("invalid");
 
       expect(error).toBeUndefined();
       expect(data).toBeDefined();
@@ -582,7 +600,7 @@ describe("OpenFoodFacts", () => {
         code: testBarcode,
         product_name: "Test Product",
         languages_codes: {},
-      } as any;
+      } as unknown as ProductDataType;
 
       const result = await productsApi.addOrEditProductV2(
         minimalProductData,
@@ -796,10 +814,10 @@ describe("OpenFoodFacts", () => {
 
       expect(result).toBe(true);
       expect(mockFetch).toHaveBeenCalled();
-      const [url, options] = mockFetch.mock.calls[0] as [string, any];
+      const [url, options] = mockFetch.mock.calls[0];
       expect(url).toBe("https://world.openfoodfacts.org/cgi/product.pl");
-      expect(options.method).toBe("POST");
-      const formDataBody = options.body as FormData;
+      expect(options?.method).toBe("POST");
+      const formDataBody = options?.body as FormData;
       expect(formDataBody.get("type")).toBe("delete");
       expect(formDataBody.get("action")).toBe("process");
       expect(formDataBody.get("code")).toBe("123456");
@@ -829,12 +847,12 @@ describe("OpenFoodFacts", () => {
     expectedCopyData: string,
   ) => {
     expect(mockFetch).toHaveBeenCalled();
-    const [url, options] = mockFetch.mock.calls[0] as [string, any];
+    const [url, options] = mockFetch.mock.calls[0];
     expect(url).toBe(
       "https://world.openfoodfacts.org/cgi/product_image_move.pl",
     );
-    expect(options.method).toBe("POST");
-    const formDataBody = options.body as FormData;
+    expect(options?.method).toBe("POST");
+    const formDataBody = options?.body as FormData;
     expect(formDataBody.get("code")).toBe("123456");
     expect(formDataBody.get("imgids")).toBe("1,2");
     expect(formDataBody.get("move_to_override")).toBe(expectedMoveTo);
@@ -1081,7 +1099,7 @@ describe("OpenFoodFacts", () => {
         ingredients_text: "Default ingredients",
         ingredients_text_fr: "Ingrédients français",
         ingredients_text_es: "Ingredientes españoles",
-      } as any;
+      } as unknown as ProductDataType;
 
       // Access private method through instance
 
@@ -1098,7 +1116,7 @@ describe("OpenFoodFacts", () => {
   });
 
   describe("isTokenExpired edge cases", () => {
-    const createDummyToken = (payloadObj: any) => {
+    const createDummyToken = (payloadObj: Record<string, unknown>) => {
       const payloadBase64 = Buffer.from(JSON.stringify(payloadObj)).toString(
         "base64",
       );
@@ -1107,13 +1125,21 @@ describe("OpenFoodFacts", () => {
 
     it("should treat a token with exp = 0 as expired", () => {
       const token = createDummyToken({ exp: 0 });
-      const isExpired = (productsApi as any).isTokenExpired(token);
+      const isExpired = Reflect.apply(
+        Reflect.get(productsApi, "isTokenExpired"),
+        productsApi,
+        [token],
+      );
       expect(isExpired).toBe(true);
     });
 
     it("should treat a token with no exp as expired", () => {
       const token = createDummyToken({ userId: 123 });
-      const isExpired = (productsApi as any).isTokenExpired(token);
+      const isExpired = Reflect.apply(
+        Reflect.get(productsApi, "isTokenExpired"),
+        productsApi,
+        [token],
+      );
       expect(isExpired).toBe(true);
     });
   });
@@ -1141,7 +1167,7 @@ describe("OpenFoodFacts", () => {
 
         mockV2Success(mockResponse);
 
-        const { data, error } = await productsApi.getProductV2(barcode);
+        const { data, error } = await productsApi.apiv2.getProductV2(barcode);
         expect(error).toBeUndefined();
         expect(data).toEqual(mockResponse);
       });
@@ -1150,7 +1176,7 @@ describe("OpenFoodFacts", () => {
     it("should handle API timeout", async () => {
       mockV2Error(new Error("Request timeout"));
 
-      await expect(productsApi.getProductV2(testBarcode)).rejects.toThrow(
+      await expect(productsApi.apiv2.getProductV2(testBarcode)).rejects.toThrow(
         "Request timeout",
       );
     });
