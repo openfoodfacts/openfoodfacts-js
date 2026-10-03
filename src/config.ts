@@ -1,7 +1,4 @@
 import {
-  DEFAULT_FOLKSONOMY_API_URL,
-  DEFAULT_NUTRIPATROL_API_URL,
-  DEFAULT_ROBOTOFF_API_URL,
   PRODUCT_API_HOST,
   PRODUCT_IMAGE_BASE_URL,
   STATIC_HOST,
@@ -17,39 +14,24 @@ export interface SDKConfig {
   endpoints?: Partial<Record<SDKEndpoint, string>>;
 }
 
-export type SDKEndpoint =
-  | "products"
-  | "images"
-  | "taxonomies"
-  | "search"
-  | "prices"
-  | "folksonomy"
-  | "robotoff"
-  | "nutriPatrol"
-  | "facets";
+export type SDKEndpoint = "products" | "images" | "taxonomies";
 
 export interface ResolvedSDKConfig {
   readonly locale: Readonly<{ language: string; country: string }>;
   readonly app?: Readonly<{ name: string; version?: string; contact?: string }>;
   readonly defaults: Readonly<{ productType: ProductType }>;
-  readonly endpoints: Readonly<Partial<Record<SDKEndpoint, string>>>;
+  readonly endpoints: Readonly<Record<SDKEndpoint, string>>;
 }
 
-const PRODUCTION_ENDPOINTS: Partial<Record<SDKEndpoint, string>> = {
+const PRODUCTION_ENDPOINTS: Record<SDKEndpoint, string> = {
   products: PRODUCT_API_HOST,
   images: PRODUCT_IMAGE_BASE_URL,
   taxonomies: STATIC_HOST,
-  folksonomy: DEFAULT_FOLKSONOMY_API_URL,
-  robotoff: DEFAULT_ROBOTOFF_API_URL,
-  nutriPatrol: DEFAULT_NUTRIPATROL_API_URL,
-  search: "https://search.openfoodfacts.org",
-  prices: "https://prices.openfoodfacts.org",
-  facets: "https://facets-kp.openfoodfacts.org",
 };
 
 /** Resolve SDK defaults without mutating the supplied options. */
 export function resolveConfig(config: SDKConfig = {}): ResolvedSDKConfig {
-  const endpoints: Partial<Record<SDKEndpoint, string>> = {
+  const endpoints: Record<SDKEndpoint, string> = {
     ...PRODUCTION_ENDPOINTS,
   };
   for (const [name, endpoint] of Object.entries(config.endpoints ?? {})) {
@@ -60,7 +42,7 @@ export function resolveConfig(config: SDKConfig = {}): ResolvedSDKConfig {
     endpoints[name as SDKEndpoint] = endpoint;
   }
   for (const name of Object.keys(endpoints) as SDKEndpoint[]) {
-    endpoints[name] = endpoints[name]!.replace(/\/$/, "");
+    endpoints[name] = endpoints[name].replace(/\/$/, "");
   }
   const frozenEndpoints = Object.freeze(endpoints);
   for (const [name, endpoint] of Object.entries(frozenEndpoints)) {

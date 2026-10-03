@@ -13,13 +13,6 @@ export type {
   SDKEndpoint,
 } from "./config.js";
 
-import { Robotoff } from "./robotoff.js";
-import { NutriPatrol } from "./nutripatrol.js";
-import { SearchApi } from "./search.js";
-import { PricesApi } from "./prices.js";
-import { Folksonomy } from "./folksonomy.js";
-import { FacetsKp } from "./facets-kp.js";
-
 import type {
   Additive,
   Allergen,
@@ -136,53 +129,7 @@ export class OpenFoodFacts {
   /** The V3 ProductOpener API class. Do not use directly unless you know what you're doing. */
   readonly apiv3: ProductOpenerApiV3;
 
-  /** The Robotoff API class. */
-  private _robotoff?: Robotoff;
-  get robotoff(): Robotoff {
-    const endpoint = this.requireEndpoint("robotoff");
-    return (this._robotoff ??= new Robotoff(this.appFetch, {
-      apiUrl: endpoint,
-    }));
-  }
-
-  /** The NutriPatrol API class. */
-  private _nutriPatrol?: NutriPatrol;
-  get nutriPatrol(): NutriPatrol {
-    return (this._nutriPatrol ??= new NutriPatrol(this.appFetch, {
-      baseUrl: this.requireEndpoint("nutriPatrol"),
-    }));
-  }
-
-  /** Auxiliary API clients use their configured production endpoints. */
-  get searchApi(): SearchApi {
-    return (this._searchApi ??= new SearchApi(this.appFetch, {
-      baseUrl: this.requireEndpoint("search"),
-    }));
-  }
-  private _searchApi?: SearchApi;
-
-  get pricesApi(): PricesApi {
-    return (this._pricesApi ??= new PricesApi(this.appFetch, {
-      baseUrl: this.requireEndpoint("prices"),
-    }));
-  }
-  private _pricesApi?: PricesApi;
-
-  get folksonomyApi(): Folksonomy {
-    return (this._folksonomyApi ??= new Folksonomy(this.appFetch, {
-      baseUrl: this.requireEndpoint("folksonomy"),
-    }));
-  }
-  private _folksonomyApi?: Folksonomy;
-
-  get facetsKp(): FacetsKp {
-    return (this._facetsKp ??= new FacetsKp(this.appFetch, {
-      baseUrl: this.requireEndpoint("facets"),
-    }));
-  }
-  private _facetsKp?: FacetsKp;
-
-  /** Shared app identity wrapper; does not inject the product API token. */
+  /** App identity transport for static taxonomy downloads, without product auth. */
   private readonly appFetch: FetchFn;
 
   /**
@@ -192,7 +139,7 @@ export class OpenFoodFacts {
    */
   constructor(fetch: FetchFn, options: OpenFoodFactsOptions = {}) {
     this.resolvedConfig = resolveConfig(options);
-    this.baseUrl = this.requireEndpoint("products");
+    this.baseUrl = this.resolvedConfig.endpoints.products;
     this.customUserAgent = this.createUserAgent(options.app);
     this.accessToken = options.accessToken;
     this.appFetch = this.createUserAgentFetch(fetch);
@@ -204,16 +151,6 @@ export class OpenFoodFacts {
         : this.appFetch;
     this.apiv2 = new ProductOpenerApiV2(this.fetch, { host: this.baseUrl });
     this.apiv3 = new ProductOpenerApiV3(this.fetch, { host: this.baseUrl });
-  }
-
-  private requireEndpoint(name: keyof ResolvedSDKConfig["endpoints"]): string {
-    const endpoint = this.resolvedConfig.endpoints[name];
-    if (!endpoint) {
-      throw new Error(
-        `No endpoint is configured for "${name}". Set endpoints.${name} explicitly.`,
-      );
-    }
-    return endpoint;
   }
 
   /** Creates the User-Agent string from the application identity. */
@@ -490,7 +427,7 @@ export class OpenFoodFacts {
   }
 
   async getTaxo<T extends TaxoNode>(taxo: string): Promise<Taxonomy<T>> {
-    const url = `${this.requireEndpoint("taxonomies")}/data/taxonomies/${taxo}.json`;
+    const url = `${this.resolvedConfig.endpoints.taxonomies}/data/taxonomies/${taxo}.json`;
     const res = await this.appFetch(url);
     return (await res.json()) as Taxonomy<T>;
   }
@@ -598,7 +535,7 @@ export class OpenFoodFacts {
       imageName,
       images,
       size,
-      this.requireEndpoint("images"),
+      this.resolvedConfig.endpoints.images,
     );
 
   /**

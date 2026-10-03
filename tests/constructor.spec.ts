@@ -1,6 +1,14 @@
 import { MockedFunction } from "vitest";
 import OpenFoodFacts from "../src";
 import { resolveConfig } from "../src";
+import {
+  Robotoff,
+  NutriPatrol,
+  SearchApi,
+  PricesApi,
+  Folksonomy,
+  FacetsKp,
+} from "../src";
 
 describe("OpenFoodFacts Constructor", () => {
   let mockFetch: MockedFunction<typeof fetch>;
@@ -51,7 +59,7 @@ describe("OpenFoodFacts Constructor", () => {
       );
     });
 
-    it("routes auxiliary APIs and keeps the product token off taxonomy requests", async () => {
+    it("uses the taxonomy endpoint without the product token", async () => {
       const payload = Buffer.from(
         JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 60 }),
       ).toString("base64url");
@@ -64,7 +72,6 @@ describe("OpenFoodFacts Constructor", () => {
         accessToken: token,
         endpoints: {
           taxonomies: "https://static.example.test",
-          robotoff: "https://robot.example.test/api/v1",
         },
       });
 
@@ -80,14 +87,6 @@ describe("OpenFoodFacts Constructor", () => {
       expect((taxonomyCall[1]?.headers as Headers).has("Authorization")).toBe(
         false,
       );
-
-      await client.robotoff.getLogoAnnotations(12345);
-      const robotoffRequest = mockFetch.mock.calls[1][0];
-      const robotoffUrl =
-        robotoffRequest instanceof Request
-          ? robotoffRequest.url
-          : String(robotoffRequest);
-      expect(robotoffUrl).toContain("https://robot.example.test/api/v1/");
     });
   });
 
@@ -308,6 +307,25 @@ describe("OpenFoodFacts Constructor", () => {
   });
 
   describe("Client initialization", () => {
+    it("exports auxiliary services as independently constructible clients", () => {
+      const clients = [
+        new Robotoff(mockFetch),
+        new NutriPatrol(mockFetch),
+        new SearchApi(mockFetch),
+        new PricesApi(mockFetch),
+        new Folksonomy(mockFetch),
+        new FacetsKp(mockFetch, {}),
+      ];
+      expect(clients.map((client) => client.constructor.name)).toEqual([
+        "Robotoff",
+        "NutriPatrol",
+        "SearchApi",
+        "PricesApi",
+        "Folksonomy",
+        "FacetsKp",
+      ]);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
     it("should initialize rawv2 client", () => {
       const client = new OpenFoodFacts(mockFetch, {
         endpoints: { products: "https://test.example.com" },
@@ -316,15 +334,24 @@ describe("OpenFoodFacts Constructor", () => {
       expect(client.apiv2.client).toBeDefined();
     });
 
-    it("should initialize robotoff client", () => {
+    it("exposes only product service clients", () => {
       const client = new OpenFoodFacts(mockFetch);
-      expect(client.robotoff).toBeDefined();
-    });
-
-    it("should reuse the lazily initialized robotoff client", () => {
-      const client = new OpenFoodFacts(mockFetch);
-      const robotoff = client.robotoff;
-      expect(client.robotoff).toBe(robotoff);
+      expect(client.apiv3.client).toBeDefined();
+      for (const service of [
+        "robotoff",
+        "nutriPatrol",
+        "searchApi",
+        "pricesApi",
+        "folksonomyApi",
+        "facetsKp",
+      ]) {
+        expect(client).not.toHaveProperty(service);
+      }
+      expect(Object.keys(resolveConfig().endpoints).sort()).toEqual([
+        "images",
+        "products",
+        "taxonomies",
+      ]);
     });
   });
 

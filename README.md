@@ -69,27 +69,47 @@ const food = await client.getProduct("5000112546415", {
 ```
 
 `resolveConfig()` is exported for inspecting the immutable resolved settings.
-Each service uses its explicit endpoint override, or its production default
+Each product endpoint uses its explicit override, or its production default
 when omitted. To use the staging product API, set
 `endpoints.products` to `https://world.openfoodfacts.net`. This changes only
-the product endpoint; other services retain their production defaults unless
+the product endpoint; images and taxonomies retain their production defaults unless
 explicitly overridden.
 
 For endpoint overrides, `images` is the full image root ending in
-`/images/products`, `taxonomies` is the static host, and `robotoff` is the full
-API base ending in `/api/v1`. Other service endpoints are service roots. These
-URLs back `getProductImageUrl`, taxonomy methods, and the `robotoff`,
-`nutriPatrol`, `searchApi`, `pricesApi`, `folksonomyApi`, and `facetsKp` clients.
-`facetsKp` accesses the facets knowledge panel service; it is separate from
-the product facet methods.
+`/images/products` and `taxonomies` is the static host. These URLs back
+`getProductImageUrl` and taxonomy methods.
 
 This configuration replaces the previous constructor options: use
 `endpoints.products` instead of `host` or `type`, and `locale.country` /
 `locale.language` instead of the top-level locale options. Use `getProduct()`
 instead of `getProductV2()` or `getProductV3()`. Version-specific clients remain
-available through `apiv2` and `apiv3` for explicit low-level access. Auxiliary clients and static
-taxonomy downloads share the application identity header wrapper; the product
+available through `apiv2` and `apiv3` for explicit low-level access. Static
+taxonomy downloads use the application identity header wrapper; the product
 API access token is applied only to product-server requests.
+
+### Independent service clients
+
+Robotoff, NutriPatrol, Search, Prices, Folksonomy, and Facets knowledge panels
+are separate services. Create their exported clients directly with their own
+fetch implementations, endpoint configuration, and authentication:
+
+```ts
+import { OpenFoodFacts, Robotoff } from "@openfoodfacts/openfoodfacts-nodejs";
+
+const products = new OpenFoodFacts(globalThis.fetch);
+const robotoff = new Robotoff(globalThis.fetch, {
+  apiUrl: "https://robotoff.openfoodfacts.org/api/v1",
+});
+
+const product = await products.getProduct("5000112546415");
+const insights = await robotoff.insights({ count: 12 });
+```
+
+Other standalone classes are `NutriPatrol`, `SearchApi`, `PricesApi`,
+`Folksonomy`, and `FacetsKp`. The main product client has no auxiliary service
+getters or endpoint options. Application identity and authentication settings
+on `OpenFoodFacts` do not configure these independent clients. `apiv2` and
+`apiv3` remain available for versions of the same product service.
 
 - See the [Open Food Facts API documentation][off-api] for more details on the API endpoints.
 
