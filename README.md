@@ -93,6 +93,47 @@ API access token is applied only to product-server requests.
 
 - See the [Open Food Facts API documentation][off-api] for more details on the API endpoints.
 
+### Product writes and additional v3 operations
+
+Use `updateProduct(barcode, params)` to create or update a product with the v3
+JSON write model. It returns `{ data, error, response }`; inspect the API status
+inside `data` as well as HTTP errors. The generated write schema currently
+supports product type, taxonomy tags, packaging, quantities, language, and image
+selections. `addOrEditProductV2()` remains available for the broader legacy edit
+model and username/password credentials.
+
+```ts
+const result = await client.updateProduct("5000112546415", {
+  product: { quantity: "330 ml", lang: "it" },
+});
+
+const selection = await client.selectAndCropImages("5000112546415", {
+  selected: { front: { it: { imgid: 12 } } },
+});
+```
+
+Writes use `endpoints.products`: configure the server that hosts the product
+(for example `https://world.openbeautyfacts.org` for cosmetics). The universal
+`product_type=all` lookup default applies to reads; writes do not automatically
+discover or redirect to a product platform. `updateProduct()` applies locale
+defaults, with explicit body values taking precedence. `uploadProductImage()`
+accepts the v3 base64 upload model; `deleteProductImage()` uses v3 deletion.
+
+Additional methods are `canonicalizeTaxonomyTags()`, `getTaxonomyDisplayTags()`,
+`getTaxonomySuggestions()`, `getPreferences()`, `getExternalSources()`, and
+`revertProduct()`. Reverting requires moderator permissions and mandatory
+`code` and `rev` values. `getExternalSources()` lists providers; it does not
+fetch or merge their panels.
+
+`getAttributeGroups()` now uses v3.4 and returns the API result with groups in
+`data.attribute_groups`; `apiv2.getAttributeGroups()` retains the v2 API
+response. Search, OCR, legacy product attributes and edits, file uploads,
+legacy crop/rotate/unselect methods, product deletion, image moves, and bulk
+image deletion retain their existing implementations. The checked-in v3 schema
+does not describe equivalents for every one of these operations. For v3 image
+selection, cropping, rotation, and unselection use `selectAndCropImages()` with
+the generated `ImageSelectionData` model.
+
 - See the [SDK auto generated documentation](https://openfoodfacts.github.io/openfoodfacts-js/) for a complete list of available methods and classes.
 
 ## Development

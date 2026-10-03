@@ -1,7 +1,7 @@
 import openapiFetchCreateClient from "openapi-fetch";
 import { unwrapCjsDefault } from "./interop-workaround.js";
 
-import type { operations, paths } from "./schemas/robotoff.js";
+import type { components, operations, paths } from "./schemas/robotoff.js";
 import { DEFAULT_ROBOTOFF_API_URL, USER_AGENT } from "./consts.js";
 import { formBody } from "./formbody.js";
 import type { FetchFn } from "./types.js";
@@ -32,6 +32,8 @@ export type LogoSearchParams =
 
 export type LogoAnnotation =
   paths["/images/logos/annotate"]["post"]["requestBody"]["content"]["application/json"]["annotations"][number];
+
+export type LogoDetails = components["schemas"]["LogoDetails"];
 
 export type RobotoffQuestionsQuery =
   operations["getQuestions"]["parameters"]["query"];
@@ -105,10 +107,9 @@ export class Robotoff {
     return this.raw.GET("/insights", { params: { query } });
   }
 
-  async loadLogo(logoId: string): Promise<unknown> {
-    // @ts-expect-error TODO: still not documented
-    const result = await this.raw.GET("/images/logos/{logoId}", {
-      params: { path: { logoId } },
+  async loadLogo(logoId: string | number): Promise<LogoDetails | undefined> {
+    const result = await this.raw.GET("/images/logos/{logo_id}", {
+      params: { path: { logo_id: Number(logoId) } },
     });
     return result.data;
   }

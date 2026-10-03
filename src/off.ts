@@ -86,6 +86,12 @@ import type {
   TaxonomySuggestionsQuery,
   TagKnowledgePanelsQuery,
   TagKnowledgePanelsResponse,
+  ProductUpdateParams,
+  ProductUpdateData,
+  ImageSelectionData,
+  TaxonomyCanonicalizeQuery,
+  TaxonomyDisplayQuery,
+  ProductRevertParams,
 } from "./off-v3.js";
 export type {
   ProductDataType,
@@ -100,6 +106,12 @@ export type {
   TaxonomySuggestionsQuery,
   TagKnowledgePanelsQuery,
   TagKnowledgePanelsResponse,
+  ProductUpdateParams,
+  ProductUpdateData,
+  ImageSelectionData,
+  TaxonomyCanonicalizeQuery,
+  TaxonomyDisplayQuery,
+  ProductRevertParams,
 };
 
 import { VERSION } from "./version.js";
@@ -484,7 +496,7 @@ export class OpenFoodFacts {
   }
 
   ///////////
-  // API V2
+  // PRODUCT OPERATIONS
   ///////////
 
   performOCR = (
@@ -497,9 +509,49 @@ export class OpenFoodFacts {
 
   /**
    * Returns all available attribute groups
-   * @returns A promise that resolves to an array of attribute groups
+   * @returns The v3 response with attribute groups in data.attribute_groups
    */
-  getAttributeGroups = () => this.apiv2.getAttributeGroups();
+  getAttributeGroups = () => this.apiv3.getAttributeGroups();
+
+  /** Create or update using v3. The write endpoint must target the product platform. */
+  updateProduct = (barcode: string, params: ProductUpdateParams) =>
+    this.apiv3.updateProduct(barcode, {
+      lc: this.resolvedConfig.locale.language,
+      cc: this.resolvedConfig.locale.country,
+      ...params,
+    });
+
+  /** Select, crop, rotate, or unselect images using the v3 image selection model. */
+  selectAndCropImages = (barcode: string, images: ImageSelectionData) =>
+    this.updateProduct(barcode, { fields: "updated", product: { images } });
+
+  canonicalizeTaxonomyTags = (query: TaxonomyCanonicalizeQuery) =>
+    this.apiv3.canonicalizeTaxonomyTags({
+      lc: this.resolvedConfig.locale.language,
+      ...query,
+    });
+
+  getTaxonomyDisplayTags = (query: TaxonomyDisplayQuery) =>
+    this.apiv3.getTaxonomyDisplayTags({
+      lc: this.resolvedConfig.locale.language,
+      ...query,
+    });
+
+  getTaxonomySuggestions = (query: TaxonomySuggestionsQuery) =>
+    this.apiv3.getTaxonomySuggestions({
+      lc: this.resolvedConfig.locale.language,
+      cc: this.resolvedConfig.locale.country,
+      ...query,
+    });
+
+  /** List providers; fetching their knowledge panels is a separate operation. */
+  getExternalSources = () => this.apiv3.getExternalSources();
+
+  getPreferences = () => this.apiv3.getPreferences();
+
+  /** Moderator-only operation. */
+  revertProduct = (params: ProductRevertParams) =>
+    this.apiv3.revertProduct(params);
 
   /**
    * Returns product attributes for a given barcode
