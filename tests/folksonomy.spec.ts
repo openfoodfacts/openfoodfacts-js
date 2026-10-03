@@ -57,7 +57,9 @@ describe("Folksonomy Wrapper", () => {
     it("should handle error when fetching products", async () => {
       fetchMock.mockResolvedValue(mockResponse(null, false, 500));
 
-      expect(await client.getKeys()).toBeNull;
+      const result = await client.getProducts("test-key");
+      expect(result.response.status).toBe(500);
+      expect(result.response.ok).toBe(false);
     });
   });
 
@@ -103,7 +105,9 @@ describe("Folksonomy Wrapper", () => {
     it("should handle error when getting product tags", async () => {
       fetchMock.mockResolvedValue(mockResponse(null, false, 500));
 
-      expect(await client.getProductTags("12345")).toBeNull;
+      const result = await client.getProductTags("12345");
+      expect(result.response.status).toBe(500);
+      expect(result.response.ok).toBe(false);
     });
 
     it("should add tag successfully", async () => {

@@ -3,7 +3,7 @@ const notImpl = () => {
 };
 
 export class TestUtils {
-  static mockResponse(data: any, ok = true, status = 200): Response {
+  static mockResponse(data: unknown, ok = true, status = 200): Response {
     const mockHeaders = {
       get: (header: string) => {
         const headers: { [key: string]: string } = {
@@ -27,7 +27,7 @@ export class TestUtils {
       ok,
       status,
       headers: mockHeaders,
-      json: () => data,
+      json: async () => data,
       text: async () => JSON.stringify(data),
       redirected: false,
       statusText: "",

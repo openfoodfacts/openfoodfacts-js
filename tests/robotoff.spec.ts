@@ -4,12 +4,12 @@ import { TestUtils } from "./utils/test-utils";
 describe("Robotoff", () => {
   let fetchMock: Mock;
   let robotoff: Robotoff;
-  let testLogoId = 12345;
+  const testLogoId = 12345;
   const mockResponse = TestUtils.mockResponse;
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    global.fetch = fetchMock as any;
+    global.fetch = fetchMock as unknown as typeof fetch;
     robotoff = new Robotoff(fetchMock);
   });
 

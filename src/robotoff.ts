@@ -105,9 +105,7 @@ export class Robotoff {
     return this.raw.GET("/insights", { params: { query } });
   }
 
-  // TODO: replace any with proper type
-  // ATM not specifying the type makes tsc fail sometimes
-  async loadLogo(logoId: string): Promise<any> {
+  async loadLogo(logoId: string): Promise<unknown> {
     // @ts-expect-error TODO: still not documented
     const result = await this.raw.GET("/images/logos/{logoId}", {
       params: { path: { logoId } },

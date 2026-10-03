@@ -20,7 +20,7 @@ describe("SearchApi Wrapper", () => {
     vi.clearAllMocks();
   });
 
-  const mockResponse = (data: any, ok = true, status = 200) => {
+  const mockResponse = (data: unknown, ok = true, status = 200) => {
     return {
       ok,
       status,

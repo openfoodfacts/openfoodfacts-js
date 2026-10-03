@@ -130,7 +130,7 @@ export type ProductDataType = ProductDataSection & {
   emb_codes: string;
   emb_codes_tags: string[];
 
-  nutriments: any;
+  nutriments: Record<string, unknown>;
 
   no_nutrition_data?: boolean;
 
