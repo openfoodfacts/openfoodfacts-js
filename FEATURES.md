@@ -19,6 +19,7 @@ For full details: https://openfoodfacts.github.io/openfoodfacts-nodejs/modules.h
 - Brand
 - Category
 - Country
+- Logos & Labels
 
 ### Taxonomies
 
@@ -43,14 +44,18 @@ For full details: https://openfoodfacts.github.io/openfoodfacts-nodejs/modules.h
 - State
 - Store
 - Initial Knowledge Panels support
+- Knowledge Panels query support
+
+### Nutri-Patrol
+
+- NutriPatrol
+- Flags
+- Tickets
+- Stats
 
 ### TODO
 
-- Nutri-Patrol
 - User Creation
 - User Deletion
 - User Edit
-- Robotoff Logos & Labels
 - Search-A-Licious
-- list targeted features here
-- Support for querying specific Knowledge Panels
