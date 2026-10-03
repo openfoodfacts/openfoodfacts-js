@@ -44,9 +44,9 @@
     "format:fix": "prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "typecheck:browser": "tsc --project tsconfig.browser.json",
-    "typecheck:node": "tsc --project tsconfig.node.json",
-    "typecheck": "tsc --project tsconfig.browser.json && tsc --project tsconfig.node.json"
+    "typecheck:browser": "yarn run prebuild && tsc --project tsconfig.browser.json",
+    "typecheck:node": "yarn run prebuild && tsc --project tsconfig.node.json",
+    "typecheck": "yarn run prebuild && tsc --project tsconfig.browser.json && tsc --project tsconfig.node.json"
   },
   "dependencies": {
     "jwt-decode": "4.0.0",
