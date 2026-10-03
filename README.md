@@ -115,6 +115,16 @@ The files are to be committed to the repository, so that the SDK can be used wit
 - Run `yarn api` to generate the OpenAPI bindings, then `yarn build` to build the project.
 - Run `yarn test` to run the tests.
 
+### Browser and Node compatibility
+
+Run `yarn typecheck` to check the entire SDK source in two separate environments:
+browser declarations without Node types, and Node declarations without DOM
+libraries. Both checks use `noEmit` and do not generate files in the source tree.
+The editor and build use Node types; passing the browser check is also required.
+
+CI runs both source checks before building the SDK.
+The unit tests run in Node; these typechecks do not constitute browser runtime tests.
+
 ## Contribute
 
 We accept contributions of any kind: new features, bug fixes, documentation improvements, etc.
