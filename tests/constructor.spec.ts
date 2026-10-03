@@ -49,6 +49,53 @@ describe("OpenFoodFacts Constructor", () => {
       expect(() => resolveConfig({ app: { name: " " } })).toThrow(/app.name/);
     });
 
+    it.each(["robotoff", "typo", "toString", "__proto__"])(
+      "rejects the unknown endpoint key %s at runtime",
+      (name) => {
+        const options = {
+          endpoints: {
+            products: undefined,
+            [name]: "https://api.example.test",
+          },
+        };
+        expect(() => resolveConfig(options)).toThrow(/Unknown SDK endpoint/);
+      },
+    );
+
+    it("continues to skip undefined endpoint overrides", () => {
+      const options = { endpoints: { products: undefined, typo: undefined } };
+      expect(resolveConfig(options).endpoints).toEqual(
+        resolveConfig().endpoints,
+      );
+    });
+
+    it("continues to reject empty endpoint values", () => {
+      expect(() => resolveConfig({ endpoints: { products: "" } })).toThrow(
+        /cannot be empty/,
+      );
+    });
+
+    it.each([
+      "https://api.example.test/proxy?token=example",
+      "https://api.example.test/proxy#section",
+      "https://api.example.test/proxy?token=example#section",
+      "ftp://api.example.test/proxy",
+    ])("rejects the invalid endpoint URL %s", (products) => {
+      expect(() => resolveConfig({ endpoints: { products } })).toThrow(
+        /Invalid URL/,
+      );
+    });
+
+    it.each(["http", "https"])(
+      "allows %s endpoint path prefixes and trims a trailing slash",
+      (protocol) => {
+        const products = `${protocol}://api.example.test/proxy/api/`;
+        expect(
+          resolveConfig({ endpoints: { products } }).endpoints.products,
+        ).toBe(`${protocol}://api.example.test/proxy/api`);
+      },
+    );
+
     it("uses configured endpoints for product requests", async () => {
       const client = new OpenFoodFacts(mockFetch, {
         endpoints: { products: "https://products.example.test" },

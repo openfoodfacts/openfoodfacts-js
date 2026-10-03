@@ -36,6 +36,9 @@ export function resolveConfig(config: SDKConfig = {}): ResolvedSDKConfig {
   };
   for (const [name, endpoint] of Object.entries(config.endpoints ?? {})) {
     if (endpoint === undefined) continue;
+    if (!Object.prototype.hasOwnProperty.call(PRODUCTION_ENDPOINTS, name)) {
+      throw new Error(`Unknown SDK endpoint: "${name}".`);
+    }
     if (endpoint.length === 0) {
       throw new Error(`SDK endpoint "${name}" cannot be empty.`);
     }
@@ -49,7 +52,11 @@ export function resolveConfig(config: SDKConfig = {}): ResolvedSDKConfig {
     if (endpoint == null) continue;
     try {
       const url = new URL(endpoint);
-      if (url.protocol !== "https:" && url.protocol !== "http:")
+      if (
+        (url.protocol !== "https:" && url.protocol !== "http:") ||
+        url.search !== "" ||
+        url.hash !== ""
+      )
         throw new Error();
     } catch {
       throw new Error(`Invalid URL for SDK endpoint "${name}": ${endpoint}`);
