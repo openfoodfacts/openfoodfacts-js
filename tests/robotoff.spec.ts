@@ -60,6 +60,28 @@ describe("Robotoff", () => {
     );
   });
 
+  it("uses the default API endpoint for empty options", async () => {
+    fetchMock.mockResolvedValue(
+      mockResponse({ id: testLogoId, barcode: "123" }),
+    );
+    await new Robotoff(fetchMock, {}).loadLogo(testLogoId);
+    expect((fetchMock.mock.calls[0][0] as Request).url).toBe(
+      `https://robotoff.openfoodfacts.org/api/v1/images/logos/${testLogoId}`,
+    );
+  });
+
+  it("resolves the API path from a configured service root", async () => {
+    fetchMock.mockResolvedValue(
+      mockResponse({ id: testLogoId, barcode: "123" }),
+    );
+    await new Robotoff(fetchMock, {
+      baseUrl: "https://robot.example.test",
+    }).loadLogo(testLogoId);
+    expect((fetchMock.mock.calls[0][0] as Request).url).toBe(
+      `https://robot.example.test/api/v1/images/logos/${testLogoId}`,
+    );
+  });
+
   it("propagates logo transport errors", async () => {
     fetchMock.mockRejectedValue(new Error("offline"));
     await expect(robotoff.loadLogo(testLogoId)).rejects.toThrow("offline");

@@ -30,7 +30,12 @@ import type {
   Taxonomy,
 } from "./taxonomy/types.js";
 
-import type { FetchFn, RawImage, SelectedImage } from "./types.js";
+import type {
+  FetchFn,
+  RawImage,
+  SelectedImage,
+  ProductImageSize,
+} from "./types.js";
 
 import type {
   FacetResponse,
@@ -80,7 +85,6 @@ import type {
   TagKnowledgePanelsQuery,
   TagKnowledgePanelsResponse,
   ProductUpdateParams,
-  ProductUpdateData,
   ImageSelectionData,
   TaxonomyCanonicalizeQuery,
   TaxonomyDisplayQuery,
@@ -100,7 +104,6 @@ export type {
   TagKnowledgePanelsQuery,
   TagKnowledgePanelsResponse,
   ProductUpdateParams,
-  ProductUpdateData,
   ImageSelectionData,
   TaxonomyCanonicalizeQuery,
   TaxonomyDisplayQuery,
@@ -109,7 +112,9 @@ export type {
 
 import { VERSION } from "./version.js";
 
-export type { ProductV3 as Product, SearchResultV2 as SearchResult };
+export type { ProductUpdateData } from "./off-v3.js";
+export type { ProductV3 as Product };
+export type { SearchResult } from "./off-v2.js";
 
 export type OpenFoodFactsOptions = SDKConfig & {
   accessToken?: string;
@@ -517,7 +522,7 @@ export class OpenFoodFacts {
    * ```
    * @returns A promise that resolves to a product object with the specified fields or undefined if not found
    */
-  getProduct = <Key extends Array<Extract<keyof ProductV3, string> | "all">>(
+  getProduct = <Key extends Array<Extract<keyof ProductV3, string>>>(
     barcode: string,
     query?: Omit<ProductQueryV3, "fields"> & { fields?: Key },
   ) =>
@@ -533,7 +538,7 @@ export class OpenFoodFacts {
     barcode: string,
     imageName: string,
     images: Record<string, SelectedImage | RawImage>,
-    size: "100" | "200" | "400" | "full" = "400",
+    size: ProductImageSize = "400",
   ) =>
     buildProductImageUrl(
       barcode,
@@ -795,7 +800,7 @@ export function getProductImageUrl(
   barcode: string,
   imageName: string,
   images: Record<string, SelectedImage | RawImage>,
-  size: "100" | "200" | "400" | "full" = "400",
+  size: ProductImageSize = "400",
 ): string | null {
   return buildProductImageUrl(barcode, imageName, images, size);
 }
@@ -809,7 +814,7 @@ function buildProductImageUrl(
   barcode: string,
   imageName: string,
   images: Record<string, SelectedImage | RawImage>,
-  size: "100" | "200" | "400" | "full",
+  size: ProductImageSize,
   imageBaseUrl?: string,
 ): string | null {
   const paddedBarcode = barcode.toString().padStart(13, "0");

@@ -2,6 +2,12 @@ import { describe, it, expect, vi } from "vitest";
 import { OpenFoodFacts } from "../src";
 
 describe("Product type and endpoint configuration", () => {
+  it("rejects barcodes that cannot form an image path", () => {
+    const client = new OpenFoodFacts(fetch);
+    expect(() =>
+      client.getProductImageUrl("123\n4567890123", "front", {}),
+    ).toThrow(/Invalid barcode format/);
+  });
   it.each(["food", "beauty", "petfood", "product"] as const)(
     "uses %s as the default product type when configured",
     async (productType) => {

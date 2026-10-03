@@ -308,7 +308,7 @@ export class ProductOpenerApiV3 {
    * @param barcode Product barcode
    * @param images Object containing image selections and crop parameters
    */
-  async selectAndCropImagesV3(barcode: string, images: ImageSelectionData) {
+  selectAndCropImagesV3(barcode: string, images: ImageSelectionData) {
     return this.updateProduct(barcode, {
       fields: "updated",
       product: { images },

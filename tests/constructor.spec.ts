@@ -79,10 +79,29 @@ describe("OpenFoodFacts Constructor", () => {
       "https://api.example.test/proxy?token=example",
       "https://api.example.test/proxy#section",
       "https://api.example.test/proxy?token=example#section",
+      "https://api.example.test/proxy?",
+      "https://api.example.test/proxy#",
+      "https://api.example.test/proxy?#",
       "ftp://api.example.test/proxy",
     ])("rejects the invalid endpoint URL %s", (products) => {
       expect(() => resolveConfig({ endpoints: { products } })).toThrow(
         /Invalid URL/,
+      );
+    });
+
+    it("allows encoded delimiters in endpoint paths", () => {
+      const products = "https://api.example.test/proxy%3Ftenant%23section";
+      expect(
+        resolveConfig({ endpoints: { products } }).endpoints.products,
+      ).toBe(products);
+    });
+
+    it("rejects unsupported product types at runtime", () => {
+      const options = {
+        defaults: { productType: "unsupported" },
+      } as unknown as Parameters<typeof resolveConfig>[0];
+      expect(() => resolveConfig(options)).toThrow(
+        /Unsupported default product type/,
       );
     });
 
@@ -286,6 +305,45 @@ describe("OpenFoodFacts Constructor", () => {
 
       return `${base64UrlEncode(header)}.${base64UrlEncode(payload)}.`;
     }
+
+    it("authenticates product requests made with a URL input", async () => {
+      const token = mockJWT({ exp: Math.floor(Date.now() / 1000) + 60 });
+      const client = new OpenFoodFacts(mockFetch, { accessToken: token });
+      await client.getLoginStatus();
+      const headers = mockFetch.mock.calls[0][1]?.headers as Headers;
+      expect(headers.get("Authorization")).toBe(`Bearer ${token}`);
+      expect(mockFetch.mock.calls[0][0]).toBeInstanceOf(URL);
+    });
+
+    it("merges Request and init headers when applying product authentication", async () => {
+      const token = mockJWT({ exp: Math.floor(Date.now() / 1000) + 60 });
+      const client = new OpenFoodFacts(mockFetch, { accessToken: token });
+      const authenticatedFetch = Reflect.get(client, "fetch") as typeof fetch;
+      const request = new Request(
+        "https://world.openfoodfacts.org/api/v3/product/test",
+        {
+          headers: { "X-Request": "preserved", "X-Override": "request" },
+        },
+      );
+      await authenticatedFetch(request, {
+        headers: { "X-Override": "init", "X-Init": "preserved" },
+      });
+      const headers = mockFetch.mock.calls[0][1]?.headers as Headers;
+      expect(headers.get("X-Request")).toBe("preserved");
+      expect(headers.get("X-Init")).toBe("preserved");
+      expect(headers.get("X-Override")).toBe("init");
+      expect(headers.get("Authorization")).toBe(`Bearer ${token}`);
+    });
+
+    it("rejects a request if the configured token is subsequently missing", async () => {
+      const token = mockJWT({ exp: Math.floor(Date.now() / 1000) + 60 });
+      const client = new OpenFoodFacts(mockFetch, { accessToken: token });
+      Object.defineProperty(client, "accessToken", { value: undefined });
+      await expect(client.getProduct("1234567890123")).rejects.toThrow(
+        "Access token was first specified and now is null.",
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
 
     it("should throw error when token expires and no refresh handler provided", async () => {
       const expiredToken = mockJWT({ exp: Math.floor(Date.now() / 1000) - 60 });

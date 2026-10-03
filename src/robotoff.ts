@@ -51,18 +51,14 @@ export class Robotoff {
   /** The base URL for the API */
   private readonly baseUrl: string;
 
-  constructor(
-    fetch: FetchFn,
-    options: { baseUrl?: string; apiUrl?: string } = {
-      baseUrl: DEFAULT_ROBOTOFF_API_URL,
-    },
-  ) {
+  /** Create an independent client with a service root or a full API base URL. */
+  constructor(fetch: FetchFn, options?: { baseUrl?: string; apiUrl?: string }) {
     this.fetch = fetch;
     this.baseUrl =
-      options.apiUrl ??
+      options?.apiUrl ??
       new URL(
         "/api/v1",
-        options.baseUrl ?? DEFAULT_ROBOTOFF_API_URL,
+        options?.baseUrl ?? DEFAULT_ROBOTOFF_API_URL,
       ).toString();
     this.raw = createClient<paths>({
       fetch: this.fetch,

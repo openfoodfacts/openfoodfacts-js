@@ -29,6 +29,24 @@ const PRODUCTION_ENDPOINTS: Record<SDKEndpoint, string> = {
   taxonomies: STATIC_HOST,
 };
 
+/** Validate a service base URL, including empty query and fragment delimiters. */
+function validateEndpoint(name: SDKEndpoint, endpoint: string): void {
+  const message = `Invalid URL for SDK endpoint "${name}": ${endpoint}`;
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    throw new Error(message);
+  }
+  if (
+    (url.protocol !== "https:" && url.protocol !== "http:") ||
+    url.href.includes("?") ||
+    url.href.includes("#")
+  ) {
+    throw new Error(message);
+  }
+}
+
 /** Resolve SDK defaults without mutating the supplied options. */
 export function resolveConfig(config: SDKConfig = {}): ResolvedSDKConfig {
   const endpoints: Record<SDKEndpoint, string> = {
@@ -46,22 +64,9 @@ export function resolveConfig(config: SDKConfig = {}): ResolvedSDKConfig {
   }
   for (const name of Object.keys(endpoints) as SDKEndpoint[]) {
     endpoints[name] = endpoints[name].replace(/\/$/, "");
+    validateEndpoint(name, endpoints[name]);
   }
   const frozenEndpoints = Object.freeze(endpoints);
-  for (const [name, endpoint] of Object.entries(frozenEndpoints)) {
-    if (endpoint == null) continue;
-    try {
-      const url = new URL(endpoint);
-      if (
-        (url.protocol !== "https:" && url.protocol !== "http:") ||
-        url.search !== "" ||
-        url.hash !== ""
-      )
-        throw new Error();
-    } catch {
-      throw new Error(`Invalid URL for SDK endpoint "${name}": ${endpoint}`);
-    }
-  }
 
   const app = config.app ? Object.freeze({ ...config.app }) : undefined;
   if (app && !app.name.trim()) throw new Error("app.name cannot be empty.");
