@@ -107,6 +107,10 @@ export class Robotoff {
     return this.raw.GET("/insights", { params: { query } });
   }
 
+  /**
+   * Fetch details for a numeric logo ID supplied as a number or string.
+   * @returns Logo details, or undefined when the API returns an HTTP error.
+   */
   async loadLogo(logoId: string | number): Promise<LogoDetails | undefined> {
     const result = await this.raw.GET("/images/logos/{logo_id}", {
       params: { path: { logo_id: Number(logoId) } },

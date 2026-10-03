@@ -426,6 +426,7 @@ export class OpenFoodFacts {
     return this.getTaxo<Nutrient>("nutrients");
   }
 
+  /** Download a complete taxonomy from the configured static host without product auth. */
   async getTaxo<T extends TaxoNode>(taxo: string): Promise<Taxonomy<T>> {
     const url = `${this.resolvedConfig.endpoints.taxonomies}/data/taxonomies/${taxo}.json`;
     const res = await this.appFetch(url);
@@ -462,18 +463,21 @@ export class OpenFoodFacts {
   selectAndCropImages = (barcode: string, images: ImageSelectionData) =>
     this.updateProduct(barcode, { fields: "updated", product: { images } });
 
+  /** Convert local taxonomy tags to canonical tags using the configured language. */
   canonicalizeTaxonomyTags = (query: TaxonomyCanonicalizeQuery) =>
     this.apiv3.canonicalizeTaxonomyTags({
       lc: this.resolvedConfig.locale.language,
       ...query,
     });
 
+  /** Translate canonical tags for display; query locale overrides the default. */
   getTaxonomyDisplayTags = (query: TaxonomyDisplayQuery) =>
     this.apiv3.getTaxonomyDisplayTags({
       lc: this.resolvedConfig.locale.language,
       ...query,
     });
 
+  /** Fetch autocomplete suggestions with overridable language and country defaults. */
   getTaxonomySuggestions = (query: TaxonomySuggestionsQuery) =>
     this.apiv3.getTaxonomySuggestions({
       lc: this.resolvedConfig.locale.language,
@@ -484,6 +488,7 @@ export class OpenFoodFacts {
   /** List providers; fetching their knowledge panels is a separate operation. */
   getExternalSources = () => this.apiv3.getExternalSources();
 
+  /** Fetch preference importance values used to score product attributes. */
   getPreferences = () => this.apiv3.getPreferences();
 
   /** Moderator-only operation. */
@@ -795,6 +800,11 @@ export function getProductImageUrl(
   return buildProductImageUrl(barcode, imageName, images, size);
 }
 
+/**
+ * Build an image URL from barcode and image metadata using an optional image root.
+ * @returns The image URL, or null when the named image is missing.
+ * @throws When the padded barcode cannot be split into the image path segments.
+ */
 function buildProductImageUrl(
   barcode: string,
   imageName: string,

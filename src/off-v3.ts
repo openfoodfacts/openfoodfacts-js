@@ -381,6 +381,7 @@ export class ProductOpenerApiV3 {
     };
   }
 
+  /** Fetch v3.4 attribute group definitions in data.attribute_groups. */
   async getAttributeGroups() {
     return this.client.GET("/api/v3.4/attribute_groups");
   }
