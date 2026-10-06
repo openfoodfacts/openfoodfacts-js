@@ -1,78 +1,80 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { OpenFoodFacts } from "../src";
-import { BackendType, BACKEND_DOMAINS, BACKEND_NAMES } from "../src/consts";
 
-describe("Platform support tests", () => {
-  const dummyFetch = (() => Promise.resolve(new Response())) as typeof fetch;
-
-  it("should set the correct baseUrl for OFF platform", () => {
-    const off = new OpenFoodFacts(dummyFetch, {
-      type: BackendType.OFF,
-    });
-    // @ts-ignore - accessing private property for testing
-    expect(off.baseUrl).toContain(BACKEND_DOMAINS[BackendType.OFF]);
+describe("Product type and endpoint configuration", () => {
+  it("rejects barcodes that cannot form an image path", () => {
+    const client = new OpenFoodFacts(fetch);
+    expect(() =>
+      client.getProductImageUrl("123\n4567890123", "front", {}),
+    ).toThrow(/Invalid barcode format/);
   });
-
-  it("should set the correct baseUrl for OBF platform", () => {
-    const off = new OpenFoodFacts(dummyFetch, {
-      type: BackendType.OBF,
-    });
-
-    // @ts-ignore - accessing private property for testing
-    expect(off.baseUrl).toContain(BACKEND_DOMAINS[BackendType.OBF]);
-  });
-
-  it("should set the correct baseUrl for OPFF platform", () => {
-    const off = new OpenFoodFacts(dummyFetch, {
-      type: BackendType.OPFF,
-    });
-
-    // @ts-ignore - accessing private property for testing
-    expect(off.baseUrl).toContain(BACKEND_DOMAINS[BackendType.OPFF]);
-  });
-
-  it("should set the correct baseUrl for OPF platform", () => {
-    const off = new OpenFoodFacts(dummyFetch, {
-      type: BackendType.OPF,
-    });
-
-    // @ts-ignore - accessing private property for testing
-    expect(off.baseUrl).toContain(BACKEND_DOMAINS[BackendType.OPF]);
-  });
-
-  it("should set the correct User-Agent header based on platform", () => {
-    const backends = [
-      BackendType.OFF,
-      BackendType.OBF,
-      BackendType.OPFF,
-      BackendType.OPF,
-    ];
-
-    const expectedAgentPrefixes = [
-      BACKEND_NAMES[BackendType.OFF],
-      BACKEND_NAMES[BackendType.OBF],
-      BACKEND_NAMES[BackendType.OPFF],
-      BACKEND_NAMES[BackendType.OPF],
-    ];
-
-    for (let i = 0; i < backends.length; i++) {
-      const off = new OpenFoodFacts(dummyFetch, {
-        type: backends[i],
+  it.each(["food", "beauty", "petfood", "product"] as const)(
+    "uses %s as the default product type when configured",
+    async (productType) => {
+      const fetch = vi.fn().mockResolvedValue(new Response("{}"));
+      const client = new OpenFoodFacts(fetch, {
+        defaults: { productType },
+        locale: { language: "fr", country: "ca" },
+        endpoints: { products: "https://api.example.test" },
       });
 
-      // @ts-ignore - accessing private property for testing
-      expect(off.customUserAgent).toContain(expectedAgentPrefixes[i]);
-    }
-  });
+      await client.getProduct("1234567890123");
 
-  it("should accept a custom host", () => {
-    const customHost = "https://test.openfoodfacts.org";
-    const off = new OpenFoodFacts(dummyFetch, {
-      type: BackendType.OFF,
-      host: customHost,
+      const requestUrl = (fetch.mock.calls[0][0] as Request).url;
+      expect(requestUrl).toContain("https://api.example.test");
+      expect(requestUrl).toContain(`product_type=${productType}`);
+      expect(requestUrl).toContain("lc=fr");
+      expect(requestUrl).toContain("cc=ca");
+    },
+  );
+
+  it("lets a product query override configured defaults", async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response("{}"));
+    const client = new OpenFoodFacts(fetch, {
+      defaults: { productType: "beauty" },
+      locale: { language: "fr", country: "ca" },
     });
 
-    // @ts-ignore - accessing private property for testing
-    expect(off.baseUrl).toBe(customHost);
+    await client.getProduct("1234567890123", {
+      product_type: "petfood",
+      lc: "de",
+      cc: "at",
+    });
+
+    const requestUrl = (fetch.mock.calls[0][0] as Request).url;
+    expect(requestUrl).toContain("product_type=petfood");
+    expect(requestUrl).toContain("lc=de");
+    expect(requestUrl).toContain("cc=at");
+  });
+
+  it("uses configured image endpoint for client image URLs", () => {
+    const client = new OpenFoodFacts(fetch, {
+      endpoints: { images: "https://cdn.example.test/products" },
+    });
+    expect(
+      client.getProductImageUrl("1234567890123", "front", {
+        front: {
+          angle: 0,
+          coordinates_image_size: "400x400",
+          geometry: "0x0+0+0",
+          imgid: "1",
+          normalize: null,
+          rev: "1",
+          sizes: {
+            100: { h: 100, w: 100 },
+            200: { h: 200, w: 200 },
+            400: { h: 400, w: 400 },
+            full: { h: 800, w: 800 },
+          },
+          white_magic: null,
+          x1: "0",
+          x2: "400",
+          y1: "0",
+          y2: "400",
+        },
+      }),
+    ).toBe(
+      "https://cdn.example.test/products/123/456/789/0123/front.1.400.jpg",
+    );
   });
 });

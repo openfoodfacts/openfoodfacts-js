@@ -5,6 +5,9 @@ export type LangGenericName = `generic_name_${string}`;
 
 export type ImageSize = { h: number; w: number };
 
+/** Available sizes for product image URLs. */
+export type ProductImageSize = "100" | "200" | "400" | "full";
+
 export type SelectedImage = {
   angle: number;
   coordinates_image_size: string;

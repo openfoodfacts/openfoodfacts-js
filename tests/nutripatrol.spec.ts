@@ -74,7 +74,7 @@ describe("NutriPatrol Wrapper", () => {
       };
       fetchMock.mockResolvedValue(mockResponse(data, false, 422));
 
-      const result = await client.getFlagById("wrong-id" as any);
+      const result = await client.getFlagById("wrong-id" as unknown as number);
       expect(result.response?.status).toBe(422);
       expect(result.error?.detail?.[0].msg).toBe(
         "Input should be a valid integer, unable to parse string as an integer",

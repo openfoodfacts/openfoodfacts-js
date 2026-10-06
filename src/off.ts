@@ -1,16 +1,18 @@
 import { jwtDecode, type JwtPayload } from "jwt-decode";
 
 import {
-  PRODUCT_IMAGE_URL,
-  BackendType,
-  BACKEND_DOMAINS,
-  BACKEND_NAMES,
-} from "./consts.js";
+  resolveConfig,
+  type ResolvedSDKConfig,
+  type SDKConfig,
+} from "./config.js";
+export { resolveConfig } from "./config.js";
+export type {
+  ProductType,
+  ResolvedSDKConfig,
+  SDKConfig,
+  SDKEndpoint,
+} from "./config.js";
 
-import { Robotoff } from "./robotoff.js";
-import { NutriPatrol } from "./nutripatrol.js";
-
-import { TAXONOMY_URL } from "./taxonomy/api.js";
 import type {
   Additive,
   Allergen,
@@ -28,7 +30,12 @@ import type {
   Taxonomy,
 } from "./taxonomy/types.js";
 
-import type { FetchFn, RawImage, SelectedImage } from "./types.js";
+import type {
+  FetchFn,
+  RawImage,
+  SelectedImage,
+  ProductImageSize,
+} from "./types.js";
 
 import type {
   FacetResponse,
@@ -77,6 +84,11 @@ import type {
   TaxonomySuggestionsQuery,
   TagKnowledgePanelsQuery,
   TagKnowledgePanelsResponse,
+  ProductUpdateParams,
+  ImageSelectionData,
+  TaxonomyCanonicalizeQuery,
+  TaxonomyDisplayQuery,
+  ProductRevertParams,
 } from "./off-v3.js";
 export type {
   ProductDataType,
@@ -91,115 +103,68 @@ export type {
   TaxonomySuggestionsQuery,
   TagKnowledgePanelsQuery,
   TagKnowledgePanelsResponse,
+  ProductUpdateParams,
+  ImageSelectionData,
+  TaxonomyCanonicalizeQuery,
+  TaxonomyDisplayQuery,
+  ProductRevertParams,
 };
 
 import { VERSION } from "./version.js";
 
-// By default, use v2
-export type { ProductV2 as Product, SearchResultV2 as SearchResult };
+export type { ProductUpdateData } from "./off-v3.js";
+export type { ProductV3 as Product };
+export type { SearchResult } from "./off-v2.js";
 
-export type OpenFoodFactsOptions = {
-  type?: BackendType;
-  country?: string;
-  language?: string;
-  host?: string;
-
+export type OpenFoodFactsOptions = SDKConfig & {
   accessToken?: string;
   onAccessTokenExpired?: () => string | Promise<string>;
 };
 
 /** Wrapper of OFF API */
 export class OpenFoodFacts {
+  /** Product transport, with optional product API authentication. */
   private readonly fetch: FetchFn;
   private readonly baseUrl: string;
-  private readonly backendType?: BackendType;
   private readonly customUserAgent: string;
+  private readonly resolvedConfig: ResolvedSDKConfig;
   private accessToken?: string;
-  private readonly defaultOptions: {
-    lang?: string;
-    country?: string;
-    username?: string;
-    password?: string;
-  };
-
   /** The V2 ProductOpener API class. Do not use directly unless you know what you're doing.  */
   readonly apiv2: ProductOpenerApiV2;
   /** The V3 ProductOpener API class. Do not use directly unless you know what you're doing. */
   readonly apiv3: ProductOpenerApiV3;
 
-  /** The Robotoff API class. */
-  readonly robotoff: Robotoff;
-
-  /** The NutriPatrol API class. */
-  readonly nutriPatrol: NutriPatrol;
+  /** App identity transport for static taxonomy downloads, without product auth. */
+  private readonly appFetch: FetchFn;
 
   /**
    * Create OFF object
    * @param fetch - Fetch implementation to use
    * @param options - Options for the OFF Object
    */
-  constructor(
-    fetch: FetchFn,
-    options: OpenFoodFactsOptions = { country: "world", language: "en" },
-  ) {
-    this.validateOptions(options);
-    this.backendType = options.type;
-    this.baseUrl = this.createBaseUrl(options);
-    this.customUserAgent = this.createUserAgent();
+  constructor(fetch: FetchFn, options: OpenFoodFactsOptions = {}) {
+    this.resolvedConfig = resolveConfig(options);
+    this.baseUrl = this.resolvedConfig.endpoints.products;
+    this.customUserAgent = this.createUserAgent(options.app);
     this.accessToken = options.accessToken;
-    this.fetch = this.createFetchWrapper(fetch, options);
-    this.defaultOptions = {
-      lang: options.language,
-      country: options.country,
-      username: undefined,
-      password: undefined,
-    };
-
+    this.appFetch = this.createUserAgentFetch(fetch);
+    if (options.accessToken != null)
+      this.validateAccessToken(options.accessToken);
+    this.fetch =
+      options.accessToken != null
+        ? this.createTokenAwareFetch(this.appFetch, options)
+        : this.appFetch;
     this.apiv2 = new ProductOpenerApiV2(this.fetch, { host: this.baseUrl });
     this.apiv3 = new ProductOpenerApiV3(this.fetch, { host: this.baseUrl });
-    this.robotoff = new Robotoff(fetch);
-    this.nutriPatrol = new NutriPatrol(fetch);
   }
 
-  /**
-   * Validates constructor options for mutual exclusivity
-   */
-  private validateOptions(options: OpenFoodFactsOptions): void {
-    if (
-      (options.host && options.country) ||
-      (options.type && options.country)
-    ) {
-      throw new Error(
-        "You must provide either `host`, `type`, or `country`, not multiple.",
-      );
+  /** Creates the User-Agent string from the application identity. */
+  private createUserAgent(app?: SDKConfig["app"]): string {
+    if (app) {
+      const version = app.version ? `/${app.version}` : "";
+      const contact = app.contact ? ` (${app.contact})` : "";
+      return `${app.name}${version}${contact} - NodeJS ${VERSION}`;
     }
-  }
-
-  /**
-   * Creates the base URL based on options
-   */
-  private createBaseUrl(options: OpenFoodFactsOptions): string {
-    if (options.host != null) {
-      return options.host;
-    }
-
-    if (options.type != null) {
-      const domain = BACKEND_DOMAINS[options.type];
-      return `https://world.${domain}`;
-    }
-
-    return `https://${options.country || "world"}.openfoodfacts.org`;
-  }
-
-  /**
-   * Creates the User-Agent string based on backend type
-   */
-  private createUserAgent(): string {
-    if (this.backendType != null) {
-      const backendName = BACKEND_NAMES[this.backendType];
-      return `${backendName} - NodeJS ${VERSION}`;
-    }
-
     return `OpenFoodFacts - NodeJS ${VERSION}`;
   }
 
@@ -227,25 +192,6 @@ export class OpenFoodFacts {
   }
 
   /**
-   * Creates a fetch wrapper with User-Agent and optional token handling
-   */
-  private createFetchWrapper(
-    fetch: FetchFn,
-    options: OpenFoodFactsOptions,
-  ): FetchFn {
-    // Base fetch wrapper with User-Agent
-    let wrappedFetch = this.createUserAgentFetch(fetch);
-
-    // Add token handling if access token is provided
-    if (options.accessToken != null) {
-      this.validateAccessToken(options.accessToken);
-      wrappedFetch = this.createTokenAwareFetch(wrappedFetch, options);
-    }
-
-    return wrappedFetch;
-  }
-
-  /**
    * Creates a fetch wrapper that adds User-Agent header
    */
   private createUserAgentFetch(fetch: FetchFn): FetchFn {
@@ -253,7 +199,14 @@ export class OpenFoodFacts {
       url: string | URL | globalThis.Request,
       init?: globalThis.RequestInit,
     ) => {
-      const headers = new Headers(init?.headers);
+      const headers = new Headers(
+        typeof Request !== "undefined" && url instanceof Request
+          ? url.headers
+          : undefined,
+      );
+      new Headers(init?.headers).forEach((value, key) =>
+        headers.set(key, value),
+      );
       headers.set("User-Agent", this.customUserAgent);
       return fetch(url, { ...init, headers });
     };
@@ -270,7 +223,14 @@ export class OpenFoodFacts {
       url: string | URL | globalThis.Request | URL,
       init?: globalThis.RequestInit,
     ) => {
-      const headers = new Headers(init?.headers);
+      const headers = new Headers(
+        typeof Request !== "undefined" && url instanceof Request
+          ? url.headers
+          : undefined,
+      );
+      new Headers(init?.headers).forEach((value, key) =>
+        headers.set(key, value),
+      );
 
       if (this.accessToken == null) {
         throw new Error("Access token was first specified and now is null.");
@@ -471,13 +431,15 @@ export class OpenFoodFacts {
     return this.getTaxo<Nutrient>("nutrients");
   }
 
+  /** Download a complete taxonomy from the configured static host without product auth. */
   async getTaxo<T extends TaxoNode>(taxo: string): Promise<Taxonomy<T>> {
-    const res = await this.fetch(TAXONOMY_URL(taxo, this.backendType));
+    const url = `${this.resolvedConfig.endpoints.taxonomies}/data/taxonomies/${taxo}.json`;
+    const res = await this.appFetch(url);
     return (await res.json()) as Taxonomy<T>;
   }
 
   ///////////
-  // API V2
+  // PRODUCT OPERATIONS
   ///////////
 
   performOCR = (
@@ -490,9 +452,53 @@ export class OpenFoodFacts {
 
   /**
    * Returns all available attribute groups
-   * @returns A promise that resolves to an array of attribute groups
+   * @returns The v3 response with attribute groups in data.attribute_groups
    */
-  getAttributeGroups = () => this.apiv2.getAttributeGroups();
+  getAttributeGroups = () => this.apiv3.getAttributeGroups();
+
+  /** Create or update using v3. The write endpoint must target the product platform. */
+  updateProduct = (barcode: string, params: ProductUpdateParams) =>
+    this.apiv3.updateProduct(barcode, {
+      lc: this.resolvedConfig.locale.language,
+      cc: this.resolvedConfig.locale.country,
+      ...params,
+    });
+
+  /** Select, crop, rotate, or unselect images using the v3 image selection model. */
+  selectAndCropImages = (barcode: string, images: ImageSelectionData) =>
+    this.updateProduct(barcode, { fields: "updated", product: { images } });
+
+  /** Convert local taxonomy tags to canonical tags using the configured language. */
+  canonicalizeTaxonomyTags = (query: TaxonomyCanonicalizeQuery) =>
+    this.apiv3.canonicalizeTaxonomyTags({
+      lc: this.resolvedConfig.locale.language,
+      ...query,
+    });
+
+  /** Translate canonical tags for display; query locale overrides the default. */
+  getTaxonomyDisplayTags = (query: TaxonomyDisplayQuery) =>
+    this.apiv3.getTaxonomyDisplayTags({
+      lc: this.resolvedConfig.locale.language,
+      ...query,
+    });
+
+  /** Fetch autocomplete suggestions with overridable language and country defaults. */
+  getTaxonomySuggestions = (query: TaxonomySuggestionsQuery) =>
+    this.apiv3.getTaxonomySuggestions({
+      lc: this.resolvedConfig.locale.language,
+      cc: this.resolvedConfig.locale.country,
+      ...query,
+    });
+
+  /** List providers; fetching their knowledge panels is a separate operation. */
+  getExternalSources = () => this.apiv3.getExternalSources();
+
+  /** Fetch preference importance values used to score product attributes. */
+  getPreferences = () => this.apiv3.getPreferences();
+
+  /** Moderator-only operation. */
+  revertProduct = (params: ProductRevertParams) =>
+    this.apiv3.revertProduct(params);
 
   /**
    * Returns product attributes for a given barcode
@@ -509,15 +515,38 @@ export class OpenFoodFacts {
    * @template T - An array of keys from ProductV3 to return
    * @example
    * ```typescript
-   * const result = await api.getProductV3("1234567890123", { fields: ["product_name", "brands"] });
-   * console.log(result.product.product_name, result.product.brands);
+   * const result = await api.getProduct("1234567890123", { fields: ["product_name", "brands"] });
+   * if (result.data && "product" in result.data) {
+   *   console.log(result.data.product.product_name, result.data.product.brands);
+   * }
    * ```
    * @returns A promise that resolves to a product object with the specified fields or undefined if not found
    */
-  getProductV3 = <Key extends Array<Extract<keyof ProductV3, string> | "all">>(
+  getProduct = <Key extends Array<Extract<keyof ProductV3, string>>>(
     barcode: string,
     query?: Omit<ProductQueryV3, "fields"> & { fields?: Key },
-  ) => this.apiv3.getProductV3(barcode, query);
+  ) =>
+    this.apiv3.getProductV3(barcode, {
+      product_type: this.resolvedConfig.defaults.productType,
+      lc: this.resolvedConfig.locale.language,
+      cc: this.resolvedConfig.locale.country,
+      ...query,
+    });
+
+  /** Build a product image URL with this client's configured image endpoint. */
+  getProductImageUrl = (
+    barcode: string,
+    imageName: string,
+    images: Record<string, SelectedImage | RawImage>,
+    size: ProductImageSize = "400",
+  ) =>
+    buildProductImageUrl(
+      barcode,
+      imageName,
+      images,
+      size,
+      this.resolvedConfig.endpoints.images,
+    );
 
   /**
    * Fetch knowledge panels for a tag
@@ -530,7 +559,11 @@ export class OpenFoodFacts {
     tagtype: string,
     tagOrTagId: string,
     query?: TagKnowledgePanelsQuery,
-  ) => this.apiv3.getTagKnowledgePanels(tagtype, tagOrTagId, query);
+  ) =>
+    this.apiv3.getTagKnowledgePanels(tagtype, tagOrTagId, {
+      lc: this.resolvedConfig.locale.language,
+      ...query,
+    });
 
   /**
    * Adds or edits a product using the V2 API
@@ -541,14 +574,7 @@ export class OpenFoodFacts {
   addOrEditProductV2 = (
     product: ProductDataType & { comment?: string },
     credentials?: { username: string; password: string },
-  ) => {
-    const username = credentials?.username ?? this.defaultOptions.username;
-    const password = credentials?.password ?? this.defaultOptions.password;
-
-    const nullableCredentials =
-      username != null && password != null ? { username, password } : undefined;
-    return this.apiv2.addOrEditProductV2(product, nullableCredentials);
-  };
+  ) => this.apiv2.addOrEditProductV2(product, credentials);
 
   /**
    * Uploads an image to OpenFoodFacts for a product.
@@ -625,13 +651,6 @@ export class OpenFoodFacts {
    */
   uploadProductImage = (barcode: string, params: ProductImageUploadParamsV3) =>
     this.apiv3.uploadProductImage(barcode, params);
-
-  /**
-   * Returns product data using the V2 API
-   * @param barcode - The barcode of the product
-   * @returns A promise that resolves to the product data or undefined if not found
-   */
-  getProductV2 = (barcode: string) => this.apiv2.getProductV2(barcode);
 
   /**
    * Returns an array of image names for the product
@@ -781,7 +800,22 @@ export function getProductImageUrl(
   barcode: string,
   imageName: string,
   images: Record<string, SelectedImage | RawImage>,
-  size: "100" | "200" | "400" | "full" = "400",
+  size: ProductImageSize = "400",
+): string | null {
+  return buildProductImageUrl(barcode, imageName, images, size);
+}
+
+/**
+ * Build an image URL from barcode and image metadata using an optional image root.
+ * @returns The image URL, or null when the named image is missing.
+ * @throws When the padded barcode cannot be split into the image path segments.
+ */
+function buildProductImageUrl(
+  barcode: string,
+  imageName: string,
+  images: Record<string, SelectedImage | RawImage>,
+  size: ProductImageSize,
+  imageBaseUrl?: string,
 ): string | null {
   const paddedBarcode = barcode.toString().padStart(13, "0");
   const match = paddedBarcode.match(/^(.{3})(.{3})(.{3})(.*)$/);
@@ -803,5 +837,7 @@ export function getProductImageUrl(
   } else {
     filename = `${imageName}.${size}.jpg`;
   }
-  return PRODUCT_IMAGE_URL(`${path}/${filename}`);
+  const baseUrl =
+    imageBaseUrl ?? "https://images.openfoodfacts.org/images/products";
+  return `${baseUrl.replace(/\/$/, "")}/${path}/${filename}`;
 }

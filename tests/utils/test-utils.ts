@@ -3,7 +3,8 @@ const notImpl = () => {
 };
 
 export class TestUtils {
-  static mockResponse(data: any, ok = true, status = 200): Response {
+  /** Create a JSON response stub with configurable HTTP status for SDK tests. */
+  static mockResponse(data: unknown, ok = true, status = 200): Response {
     const mockHeaders = {
       get: (header: string) => {
         const headers: { [key: string]: string } = {
@@ -27,8 +28,8 @@ export class TestUtils {
       ok,
       status,
       headers: mockHeaders,
-      json: () => data,
-      text: async () => JSON.stringify(data),
+      json: () => Promise.resolve(data),
+      text: () => Promise.resolve(JSON.stringify(data)),
       redirected: false,
       statusText: "",
       type: "default",

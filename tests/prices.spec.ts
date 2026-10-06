@@ -184,7 +184,7 @@ describe("Prices Wrapper", () => {
         type: "OSM",
         osm_id: 1,
         osm_type: "NODE",
-      } as any);
+      });
       expect(result.data ?? result).toBeDefined();
     });
 
@@ -259,9 +259,7 @@ describe("Prices Wrapper", () => {
     it("should call triggerOFFUploadImage successfully", async () => {
       const mockData = { success: true };
       fetchMock.mockResolvedValue(mockResponse(mockData));
-      const result = await client.triggerOFFUploadImage("12345", {
-        image_field: "front",
-      } as any);
+      const result = await client.triggerOFFUploadImage("12345", {});
       expect(result.data ?? result).toBeDefined();
     });
   });
@@ -299,9 +297,10 @@ describe("Prices Wrapper", () => {
       const mockData = { success: true };
       fetchMock.mockResolvedValue(mockResponse(mockData));
       const result = await client.flagProof(1, {
-        type: "OTHER",
+        reason: "OTHER",
         comment: "Test",
-      } as any);
+        content_object: "proof/1",
+      });
       expect(result.data ?? result).toBeDefined();
     });
 
@@ -356,7 +355,10 @@ describe("Prices Wrapper", () => {
     it("should call createPriceTag successfully", async () => {
       const mockData = { success: true };
       fetchMock.mockResolvedValue(mockResponse(mockData));
-      const result = await client.createPriceTag({ proof_id: 1 } as any);
+      const result = await client.createPriceTag({
+        proof_id: 1,
+        bounding_box: [0, 0, 1, 1],
+      });
       expect(result.data ?? result).toBeDefined();
     });
 
@@ -393,7 +395,13 @@ describe("Prices Wrapper", () => {
     it("should call createReceiptItem successfully", async () => {
       const mockData = { success: true };
       fetchMock.mockResolvedValue(mockResponse(mockData));
-      const result = await client.createReceiptItem({ receipt_id: 1 } as any);
+      const result = await client.createReceiptItem({
+        id: 1,
+        proof_id: 1,
+        price_id: 1,
+        order: 1,
+        updated: new Date().toISOString(),
+      });
       expect(result.data ?? result).toBeDefined();
     });
 
@@ -430,7 +438,7 @@ describe("Prices Wrapper", () => {
     it("should call updateFlag successfully", async () => {
       const mockData = { success: true };
       fetchMock.mockResolvedValue(mockResponse(mockData));
-      const result = await client.updateFlag(1, { status: "RESOLVED" as any });
+      const result = await client.updateFlag(1, { status: "CLOSED" });
       expect(result.data ?? result).toBeDefined();
     });
   });
@@ -475,9 +483,10 @@ describe("Prices Wrapper", () => {
       const mockData = { success: true };
       fetchMock.mockResolvedValue(mockResponse(mockData));
       const result = await client.flagPrice(1, {
-        type: "OTHER",
+        reason: "OTHER",
         comment: "Test",
-      } as any);
+        content_object: "price/1",
+      });
       expect(result.data ?? result).toBeDefined();
     });
   });

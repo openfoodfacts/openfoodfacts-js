@@ -3,7 +3,6 @@ export const STATIC_HOST = "https://static.openfoodfacts.org";
 import { VERSION } from "./version.js";
 export const USER_AGENT = `OpenFoodFacts - NodeJS ${VERSION}`;
 
-/* eslint-disable no-unused-vars */
 export enum BackendType {
   OFF = "OFF",
   OBF = "OBF",

@@ -2,11 +2,9 @@
   "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "bundler",
-
     "target": "es2017",
-    "types": [],
+    "types": ["node"],
     "lib": ["es2017"],
-
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -16,7 +14,12 @@
     "declarationMap": true
   },
   "references": [
-    { "path": "./tsconfig.tests.json" },
-    { "path": "./tsconfig.src.json" }
-  ]
+    {
+      "path": "./tsconfig.tests.json"
+    },
+    {
+      "path": "./tsconfig.src.json"
+    }
+  ],
+  "files": []
 }

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.src.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "lib": ["es2017"],
+    "types": ["node"]
+  }
+}

@@ -1,7 +1,7 @@
 import openapiFetchCreateClient from "openapi-fetch";
 import { unwrapCjsDefault } from "./interop-workaround.js";
 
-import type { operations, paths } from "./schemas/robotoff.js";
+import type { components, operations, paths } from "./schemas/robotoff.js";
 import { DEFAULT_ROBOTOFF_API_URL, USER_AGENT } from "./consts.js";
 import { formBody } from "./formbody.js";
 import type { FetchFn } from "./types.js";
@@ -33,6 +33,8 @@ export type LogoSearchParams =
 export type LogoAnnotation =
   paths["/images/logos/annotate"]["post"]["requestBody"]["content"]["application/json"]["annotations"][number];
 
+export type LogoDetails = components["schemas"]["LogoDetails"];
+
 export type RobotoffQuestionsQuery =
   operations["getQuestions"]["parameters"]["query"];
 
@@ -49,12 +51,15 @@ export class Robotoff {
   /** The base URL for the API */
   private readonly baseUrl: string;
 
-  constructor(
-    fetch: FetchFn,
-    options: { baseUrl: string } = { baseUrl: DEFAULT_ROBOTOFF_API_URL },
-  ) {
+  /** Create an independent client with a service root or a full API base URL. */
+  constructor(fetch: FetchFn, options?: { baseUrl?: string; apiUrl?: string }) {
     this.fetch = fetch;
-    this.baseUrl = new URL("/api/v1", options.baseUrl).toString();
+    this.baseUrl =
+      options?.apiUrl ??
+      new URL(
+        "/api/v1",
+        options?.baseUrl ?? DEFAULT_ROBOTOFF_API_URL,
+      ).toString();
     this.raw = createClient<paths>({
       fetch: this.fetch,
       baseUrl: this.baseUrl,
@@ -98,12 +103,13 @@ export class Robotoff {
     return this.raw.GET("/insights", { params: { query } });
   }
 
-  // TODO: replace any with proper type
-  // ATM not specifying the type makes tsc fail sometimes
-  async loadLogo(logoId: string): Promise<any> {
-    // @ts-expect-error TODO: still not documented
-    const result = await this.raw.GET("/images/logos/{logoId}", {
-      params: { path: { logoId } },
+  /**
+   * Fetch details for a numeric logo ID supplied as a number or string.
+   * @returns Logo details, or undefined when the API returns an HTTP error.
+   */
+  async loadLogo(logoId: string | number): Promise<LogoDetails | undefined> {
+    const result = await this.raw.GET("/images/logos/{logo_id}", {
+      params: { path: { logo_id: Number(logoId) } },
     });
     return result.data;
   }

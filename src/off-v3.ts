@@ -45,6 +45,41 @@ export type ImageSelectionData = NonNullable<
   >["content"]["application/json"]["product"]
 >["images"];
 
+type GeneratedProductUpdateParams = NonNullable<
+  operations["patch-api-v3-product-code"]["requestBody"]
+>["content"]["application/json"];
+
+type GeneratedProductUpdate = NonNullable<
+  GeneratedProductUpdateParams["product"]
+>;
+
+// The generated tags-write schema uses a string[] index signature, which also
+// constrains unrelated fields such as quantity and images. Keep known fields
+// and restrict the dictionary to taxonomy tag field names instead.
+export type ProductUpdateData = {
+  [Key in keyof GeneratedProductUpdate as string extends Key
+    ? never
+    : Key]: GeneratedProductUpdate[Key];
+} & Partial<Record<`${string}_tags` | `${string}_tags_add`, string[]>>;
+
+export type ProductUpdateParams = Omit<
+  GeneratedProductUpdateParams,
+  "product"
+> & {
+  product?: ProductUpdateData;
+};
+
+export type TaxonomyCanonicalizeQuery =
+  operations["get-api-v3-taxonomy-canonicalize-tags"]["parameters"]["query"];
+export type TaxonomyDisplayQuery =
+  operations["get-api-v3-taxonomy-display-tags"]["parameters"]["query"];
+export type ProductRevertParams = Omit<
+  NonNullable<
+    operations["post-api-v3-product_revert"]["requestBody"]
+  >["content"]["application/json"],
+  "code" | "rev"
+> & { code: string; rev: number };
+
 export type ProductDataSection = {
   created_t: number;
   creator: string;
@@ -130,7 +165,7 @@ export type ProductDataType = ProductDataSection & {
   emb_codes: string;
   emb_codes_tags: string[];
 
-  nutriments: any;
+  nutriments: Record<string, unknown>;
 
   no_nutrition_data?: boolean;
 
@@ -210,6 +245,44 @@ export class ProductOpenerApiV3 {
     return true;
   }
 
+  /** Create or update a product; use code "test" to analyze without saving. */
+  updateProduct(code: string, params: ProductUpdateParams) {
+    return this.client.PATCH("/api/v3/product/{code}", {
+      params: { path: { code } },
+      // Adapt the corrected public write model at the generated client boundary.
+      body: params as GeneratedProductUpdateParams,
+    });
+  }
+
+  /** Convert local taxonomy tags to canonical tags. */
+  canonicalizeTaxonomyTags(query: TaxonomyCanonicalizeQuery) {
+    return this.client.GET("/api/v3/taxonomy_canonicalize_tags", {
+      params: { query },
+    });
+  }
+
+  /** Translate canonical taxonomy tags for display. */
+  getTaxonomyDisplayTags(query: TaxonomyDisplayQuery) {
+    return this.client.GET("/api/v3/taxonomy_display_tags", {
+      params: { query },
+    });
+  }
+
+  /** List external knowledge panel providers; does not fetch their panels. */
+  getExternalSources() {
+    return this.client.GET("/api/v3/external_sources");
+  }
+
+  /** List preference importance values used to score product attributes. */
+  getPreferences() {
+    return this.client.GET("/api/v3/preferences");
+  }
+
+  /** Revert a product to an earlier revision (moderator permission required). */
+  revertProduct(params: ProductRevertParams) {
+    return this.client.POST("/api/v3/product_revert", { body: params });
+  }
+
   async uploadProductImage(code: string, params: ProductImageUploadParams) {
     return this.client.POST("/api/v3/product/{code}/images", {
       params: { path: { code } },
@@ -235,10 +308,10 @@ export class ProductOpenerApiV3 {
    * @param barcode Product barcode
    * @param images Object containing image selections and crop parameters
    */
-  async selectAndCropImagesV3(barcode: string, images: ImageSelectionData) {
-    return await this.client.PATCH("/api/v3/product/{code}", {
-      params: { path: { code: barcode } },
-      body: { fields: "updated", product: { images } },
+  selectAndCropImagesV3(barcode: string, images: ImageSelectionData) {
+    return this.updateProduct(barcode, {
+      fields: "updated",
+      product: { images },
     });
   }
 
@@ -308,6 +381,7 @@ export class ProductOpenerApiV3 {
     };
   }
 
+  /** Fetch v3.4 attribute group definitions in data.attribute_groups. */
   async getAttributeGroups() {
     return this.client.GET("/api/v3.4/attribute_groups");
   }
