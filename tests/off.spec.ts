@@ -170,6 +170,55 @@ describe("OpenFoodFacts", () => {
     });
   });
 
+  describe("getTaxoEntries", () => {
+    const taxonomy = {
+      "en:cereals": { name: { fr: "Céréales" }, children: ["en:mueslis"] },
+      "en:mueslis": { name: { fr: "Mueslis" } },
+    };
+
+    const requestedParams = () =>
+      new URL(mockFetch.mock.calls[0][0] as string).searchParams;
+
+    it("should return the entries keyed by id", async () => {
+      mockFetchSuccess(taxonomy);
+      const result = await productsApi.apiv2.getTaxoEntries("categories", [
+        "en:cereals",
+      ]);
+      expect(result).toEqual(taxonomy);
+    });
+
+    it("should send the languages, the relatives and the fields", async () => {
+      mockFetchSuccess(taxonomy);
+      await productsApi.apiv2.getTaxoEntries(
+        "categories",
+        ["en:cereals", "en:mueslis"],
+        {
+          lc: ["fr", "en"],
+          includeParents: true,
+          includeChildren: true,
+          fields: ["name", "children"],
+        },
+      );
+      expect(Object.fromEntries(requestedParams())).toEqual({
+        tagtype: "categories",
+        tags: "en:cereals,en:mueslis",
+        lc: "fr,en",
+        include_parents: "1",
+        include_children: "1",
+        fields: "name,children",
+      });
+    });
+
+    it("should send only the type and ids without options", async () => {
+      mockFetchSuccess(taxonomy);
+      await productsApi.apiv2.getTaxoEntries("labels", ["en:organic"]);
+      expect(Object.fromEntries(requestedParams())).toEqual({
+        tagtype: "labels",
+        tags: "en:organic",
+      });
+    });
+  });
+
   describe("getProductAttributes", () => {
     it("should return product attributes for a valid barcode", async () => {
       const mockData = {
