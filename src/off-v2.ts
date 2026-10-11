@@ -1,7 +1,7 @@
 import openapiFetchCreateClient from "openapi-fetch";
 import { unwrapCjsDefault } from "./interop-workaround.js";
 import type { components, operations, paths } from "./schemas/server/v2.js";
-import type { TaxoNode } from "./taxonomy/types.js";
+import type { TaxoNode, Taxonomy } from "./taxonomy/types.js";
 import { formData } from "./openapi.js";
 import { USER_AGENT } from "./consts.js";
 import type { ProductDataType } from "./off-v3.js";
@@ -62,6 +62,39 @@ export class ProductOpenerApiV2 {
     );
 
     return (await res.json()) as T;
+  }
+
+  /**
+   * Get several taxonomy entries, keyed by ID.
+   * @param taxo - The type of taxonomy (e.g., "categories", "brands").
+   * @param entries - The IDs of the taxonomy entries.
+   * @param options.lc - Languages for the names; the server answers in English when omitted.
+   * @param options.includeParents - Also return the parent entries.
+   * @param options.includeChildren - Also return the child entries.
+   * @param options.fields - Return only these fields (e.g., ["name", "parents"]).
+   * @example const taxo = await getTaxoEntries("categories", ["en:breakfast-cereals"], { lc: ["fr", "en"], includeChildren: true });
+   */
+  async getTaxoEntries<T extends TaxoNode>(
+    taxo: string,
+    entries: string[],
+    options: {
+      lc?: string[];
+      includeParents?: boolean;
+      includeChildren?: boolean;
+      fields?: string[];
+    } = {},
+  ): Promise<Taxonomy<T>> {
+    const params = new URLSearchParams({
+      tagtype: taxo,
+      tags: entries.join(","),
+    });
+    if (options.lc?.length) params.set("lc", options.lc.join(","));
+    if (options.includeParents) params.set("include_parents", "1");
+    if (options.includeChildren) params.set("include_children", "1");
+    if (options.fields?.length) params.set("fields", options.fields.join(","));
+
+    const res = await this.fetch(`${this.baseUrl}/api/v2/taxonomy?${params}`);
+    return (await res.json()) as Taxonomy<T>;
   }
 
   /**
