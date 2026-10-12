@@ -38,9 +38,24 @@ export const DEFAULT_ROBOTOFF_API_URL =
   "https://robotoff.openfoodfacts.org/api/v1";
 export const DEFAULT_NUTRIPATROL_API_URL =
   "https://nutripatrol.openfoodfacts.org";
-export const PRODUCT_IMAGE_BASE_URL =
-  "https://images.openfoodfacts.org/images/products";
 
-export const PRODUCT_API_HOST = "https://world.openfoodfacts.org";
+/**
+ * Dynamic Helper to get the API Host based on the flavor (OFF, OBF, etc.)
+ */
+export const getProductApiHost = (backend: BackendType = BackendType.OFF): string => {
+  return `https://world.${BACKEND_DOMAINS[backend]}`;
+};
+
+/**
+ * Dynamic Helper to get the Image Base URL based on the flavor
+ */
+export const getProductImageBaseUrl = (backend: BackendType = BackendType.OFF): string => {
+  return `https://images.${BACKEND_DOMAINS[backend]}/images/products`;
+};
+
+// Default constants for backward compatibility
+export const PRODUCT_API_HOST = getProductApiHost(BackendType.OFF);
+export const PRODUCT_IMAGE_BASE_URL = getProductImageBaseUrl(BackendType.OFF);
+
 export const PRODUCT_IMAGE_URL = (path: string) =>
   `${PRODUCT_IMAGE_BASE_URL}/${path}`;
