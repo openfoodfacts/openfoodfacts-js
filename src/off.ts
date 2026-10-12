@@ -1,10 +1,11 @@
 import { jwtDecode, type JwtPayload } from "jwt-decode";
 
 import {
-  PRODUCT_IMAGE_URL,
   BackendType,
   BACKEND_DOMAINS,
   BACKEND_NAMES,
+  ROBOTOFF_API_URLS,
+  getProductImageBaseUrl,
 } from "./consts.js";
 
 import { Robotoff } from "./robotoff.js";
@@ -99,6 +100,7 @@ import { VERSION } from "./version.js";
 export type { ProductV2 as Product, SearchResultV2 as SearchResult };
 
 export type OpenFoodFactsOptions = {
+  /** Backend flavor to target (OFF, OBF, OPFF or OPF). Defaults to OFF. */
   type?: BackendType;
   country?: string;
   language?: string;
@@ -108,11 +110,18 @@ export type OpenFoodFactsOptions = {
   onAccessTokenExpired?: () => string | Promise<string>;
 };
 
-/** Wrapper of OFF API */
+/**
+ * Wrapper of the Open Food Facts API.
+ *
+ * Also targets Open Beauty Facts, Open Pet Food Facts and Open Products Facts
+ * via the `type` option.
+ */
 export class OpenFoodFacts {
   private readonly fetch: FetchFn;
   private readonly baseUrl: string;
   private readonly backendType?: BackendType;
+  /** Flavor used for flavor-dependent URLs: `type` if given, else inferred from `host`, else OFF. */
+  private readonly effectiveBackend: BackendType;
   private readonly customUserAgent: string;
   private accessToken?: string;
   private readonly defaultOptions: {
@@ -144,6 +153,7 @@ export class OpenFoodFacts {
   ) {
     this.validateOptions(options);
     this.backendType = options.type;
+    this.effectiveBackend = this.resolveBackend(options);
     this.baseUrl = this.createBaseUrl(options);
     this.customUserAgent = this.createUserAgent();
     this.accessToken = options.accessToken;
@@ -157,8 +167,35 @@ export class OpenFoodFacts {
 
     this.apiv2 = new ProductOpenerApiV2(this.fetch, { host: this.baseUrl });
     this.apiv3 = new ProductOpenerApiV3(this.fetch, { host: this.baseUrl });
-    this.robotoff = new Robotoff(fetch);
+    this.robotoff = new Robotoff(fetch, {
+      baseUrl: ROBOTOFF_API_URLS[this.effectiveBackend],
+    });
     this.nutriPatrol = new NutriPatrol(fetch);
+  }
+
+  /** Returns `type` if provided, else infers the flavor from `host`, else OFF. */
+  private resolveBackend(options: OpenFoodFactsOptions): BackendType {
+    if (options.type != null) {
+      return options.type;
+    }
+
+    if (options.host != null) {
+      let hostname: string;
+      try {
+        hostname = new URL(this.createBaseUrl(options)).hostname;
+      } catch {
+        hostname = options.host;
+      }
+
+      for (const type of Object.values(BackendType)) {
+        const domain = BACKEND_DOMAINS[type];
+        if (hostname === domain || hostname.endsWith(`.${domain}`)) {
+          return type;
+        }
+      }
+    }
+
+    return BackendType.OFF;
   }
 
   /**
@@ -180,7 +217,9 @@ export class OpenFoodFacts {
    */
   private createBaseUrl(options: OpenFoodFactsOptions): string {
     if (options.host != null) {
-      return options.host;
+      return options.host.includes("://")
+        ? options.host
+        : `https://${options.host}`;
     }
 
     if (options.type != null) {
@@ -472,7 +511,7 @@ export class OpenFoodFacts {
   }
 
   async getTaxo<T extends TaxoNode>(taxo: string): Promise<Taxonomy<T>> {
-    const res = await this.fetch(TAXONOMY_URL(taxo, this.backendType));
+    const res = await this.fetch(TAXONOMY_URL(taxo, this.effectiveBackend));
     return (await res.json()) as Taxonomy<T>;
   }
 
@@ -775,6 +814,7 @@ export default OpenFoodFacts;
  * @param imageName - Name of the image (e.g., "front", "ingredients", "nutrition")
  * @param images - Image metadata from product data
  * @param size - Image size (100, 200, 400, or full) - defaults to 400
+ * @param backend - Backend flavor to fetch the image from - defaults to Open Food Facts
  * @returns Complete URL to the specific image or null if not found
  */
 export function getProductImageUrl(
@@ -782,6 +822,7 @@ export function getProductImageUrl(
   imageName: string,
   images: Record<string, SelectedImage | RawImage>,
   size: "100" | "200" | "400" | "full" = "400",
+  backend: BackendType = BackendType.OFF,
 ): string | null {
   const paddedBarcode = barcode.toString().padStart(13, "0");
   const match = paddedBarcode.match(/^(.{3})(.{3})(.{3})(.*)$/);
@@ -803,5 +844,5 @@ export function getProductImageUrl(
   } else {
     filename = `${imageName}.${size}.jpg`;
   }
-  return PRODUCT_IMAGE_URL(`${path}/${filename}`);
+  return `${getProductImageBaseUrl(backend)}/${path}/${filename}`;
 }
