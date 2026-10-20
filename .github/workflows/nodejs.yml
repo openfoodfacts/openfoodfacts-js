@@ -5,10 +5,15 @@ on:
     branches: [develop]
   pull_request:
 
+permissions: {}
+
 jobs:
   build:
     name: Build and Test
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     strategy:
       matrix:
@@ -20,7 +25,7 @@ jobs:
 
       - name: Install and enable Corepack
         run: |
-          npm install -g corepack --force
+          npm install -g --ignore-scripts corepack@0.36.0
           corepack enable
 
       - name: Setup Node.js ${{ matrix.node-version }}
@@ -30,7 +35,9 @@ jobs:
           cache: "yarn"
 
       - name: Install dependencies
-        run: yarn install --immutable
+        env:
+          YARN_ENABLE_SCRIPTS: "false"
+        run: yarn install --immutable --mode=skip-build
 
       - name: Lint code
         run: yarn lint
@@ -49,13 +56,16 @@ jobs:
     name: Coverage Report
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7.0.1
 
       - name: Install and enable Corepack
         run: |
-          npm install -g corepack --force
+          npm install -g --ignore-scripts corepack@0.36.0
           corepack enable
 
       - name: Setup Node.js
@@ -65,7 +75,9 @@ jobs:
           cache: "yarn"
 
       - name: Install dependencies
-        run: yarn install --immutable
+        env:
+          YARN_ENABLE_SCRIPTS: "false"
+        run: yarn install --immutable --mode=skip-build
 
       - name: Build project
         run: yarn build
@@ -96,7 +108,7 @@ jobs:
 
       - name: Install and enable Corepack
         run: |
-          npm install -g corepack --force
+          npm install -g --ignore-scripts corepack@0.36.0
           corepack enable
 
       - name: Setup Node.js
@@ -106,7 +118,9 @@ jobs:
           cache: "yarn"
 
       - name: Install dependencies
-        run: yarn install --immutable
+        env:
+          YARN_ENABLE_SCRIPTS: "false"
+        run: yarn install --immutable --mode=skip-build
 
       - name: Build project
         run: yarn build
