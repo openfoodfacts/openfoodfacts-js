@@ -14,6 +14,10 @@ describe("JWT tokens", () => {
     global.fetch = vi.fn();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("should error on numeric jwt", () => {
     expect(() => {
       // @ts-expect-error
@@ -50,6 +54,7 @@ describe("JWT tokens", () => {
   });
 
   it("should call onAccessTokenExpired", async () => {
+    vi.useFakeTimers();
     const willExpireToken = mockJWT({ exp: Math.floor(Date.now() / 1000) + 2 });
     const newToken = mockJWT({ exp: Math.floor(Date.now() / 1000) + 60 });
 
@@ -69,8 +74,7 @@ describe("JWT tokens", () => {
       onAccessTokenExpired,
     });
 
-    // wait for the token to expire
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    vi.advanceTimersByTime(3000);
 
     await client.getAdditives();
     expect(onAccessTokenExpired).toHaveBeenCalled();

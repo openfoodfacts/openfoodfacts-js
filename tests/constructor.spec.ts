@@ -11,6 +11,10 @@ describe("OpenFoodFacts Constructor", () => {
     } as Response);
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe("Options validation", () => {
     it("should throw error when both host and country are provided", () => {
       expect(() => {
@@ -287,6 +291,7 @@ describe("OpenFoodFacts Constructor", () => {
     });
 
     it("should use refreshed token when refresh handler is provided", async () => {
+      vi.useFakeTimers();
       const willExpireToken = mockJWT({
         exp: Math.floor(Date.now() / 1000) + 1,
       });
@@ -306,8 +311,7 @@ describe("OpenFoodFacts Constructor", () => {
         onAccessTokenExpired,
       });
 
-      // Wait for token to expire
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+      vi.advanceTimersByTime(1100);
 
       await client.getAdditives();
 
