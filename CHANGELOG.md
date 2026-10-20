@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0-alpha.35](https://github.com/openfoodfacts/openfoodfacts-js/compare/v2.0.0-alpha.35...v2.1.0-alpha.35) (2026-10-20)
+
+
+### Features
+
+* **v3:** add support for tag knowledge panels ([#955](https://github.com/openfoodfacts/openfoodfacts-js/issues/955)) ([fdd19df](https://github.com/openfoodfacts/openfoodfacts-js/commit/fdd19dfb952a7ef02c35f3c6975a894f629a5c4c))
+
+
+### Bug Fixes
+
+* **ci:** Limit CodeQL workflow permissions ([9abd3cb](https://github.com/openfoodfacts/openfoodfacts-js/commit/9abd3cb5961e3ff5954c884e850d805c128126be))
+
 ## [2.0.0-alpha.35](https://github.com/openfoodfacts/openfoodfacts-js/compare/v2.0.0-alpha.34...v2.0.0-alpha.35) (2026-09-03)
 
 
