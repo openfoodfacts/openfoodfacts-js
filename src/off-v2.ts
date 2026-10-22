@@ -30,6 +30,20 @@ export type ProductAttributeGroup = {
 export type NutritionDataPer = "100g" | "serving";
 
 /**
+ * Nutritional data for a product.
+ * Automatically extracted from the OpenAPI schema to ensure consistency.
+ */
+export type Nutriments = NonNullable<
+  components["schemas"]["Product"]["nutriments"]
+>;
+
+/**
+ * Valid units for nutritional values.
+ * Alias for the OpenAPI-declared nutrient unit enum.
+ */
+export type NutrientUnit = components["schemas"]["nutrient_unit"];
+
+/**
  * The OpenFoodFacts main API client for version 2.
  *
  * You should not use this class directly, instead use the `OpenFoodFactsApi` class.
