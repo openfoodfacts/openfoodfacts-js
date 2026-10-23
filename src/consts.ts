@@ -38,8 +38,17 @@ export const DEFAULT_ROBOTOFF_API_URL =
   "https://robotoff.openfoodfacts.org/api/v1";
 export const DEFAULT_NUTRIPATROL_API_URL =
   "https://nutripatrol.openfoodfacts.org";
+
 export const PRODUCT_IMAGE_BASE_URL =
   "https://images.openfoodfacts.org/images/products";
+
+/**
+ * Returns the product image base URL for a given backend flavor.
+ * @param type - The backend flavor, defaults to Open Food Facts.
+ * @returns The image base URL, e.g. `https://images.openbeautyfacts.org/images/products`.
+ */
+export const getProductImageBaseUrl = (type: BackendType = BackendType.OFF) =>
+  `https://images.${BACKEND_DOMAINS[type]}/images/products`;
 
 export const PRODUCT_API_HOST = "https://world.openfoodfacts.org";
 export const PRODUCT_IMAGE_URL = (path: string) =>
