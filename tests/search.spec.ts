@@ -182,5 +182,22 @@ describe("SearchApi Wrapper", () => {
       expect(result.error).toBeDefined();
       expect(result.response.status).toBe(503);
     });
+
+    it("should handle network failure when searching", async () => {
+      const networkError = new Error("Network request failed");
+      fetchMock.mockRejectedValue(networkError);
+
+      const body = {
+        q: "test",
+        langs: ["en"],
+        page_size: 20,
+        page: 1,
+      };
+
+      const result = await client.search(body);
+      expect(result.data).toBeUndefined();
+      expect(result.error).toBeDefined();
+      expect(result.error?.message).toContain("Network request failed");
+    });
   });
 });
