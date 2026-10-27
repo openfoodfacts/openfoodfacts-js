@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.0-alpha.36](https://github.com/openfoodfacts/openfoodfacts-js/compare/v2.0.0-alpha.35...v2.0.0-alpha.36) (2026-10-27)
+
+
+### Features
+
+* add query service facet support ([97495fd](https://github.com/openfoodfacts/openfoodfacts-js/commit/97495fd6f15f398acc34fe8c44210eeefc451353))
+* **v3:** add support for tag knowledge panels ([#955](https://github.com/openfoodfacts/openfoodfacts-js/issues/955)) ([fdd19df](https://github.com/openfoodfacts/openfoodfacts-js/commit/fdd19dfb952a7ef02c35f3c6975a894f629a5c4c))
+
+
+### Bug Fixes
+
+* **ci:** Limit CodeQL workflow permissions ([9abd3cb](https://github.com/openfoodfacts/openfoodfacts-js/commit/9abd3cb5961e3ff5954c884e850d805c128126be))
+
+
+### Miscellaneous Chores
+
+* Prepare release 2.0.0-alpha.36 ([194edaa](https://github.com/openfoodfacts/openfoodfacts-js/commit/194edaa7403419cb840ead1a39f9ec0496322abd))
+
 ## [2.0.0-alpha.35](https://github.com/openfoodfacts/openfoodfacts-js/compare/v2.0.0-alpha.34...v2.0.0-alpha.35) (2026-09-03)
 
 
