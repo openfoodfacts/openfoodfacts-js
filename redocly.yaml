@@ -38,3 +38,8 @@ apis:
     root: https://facets-kp.openfoodfacts.org/openapi.json
     x-openapi-ts:
       output: ./src/schemas/facets-kp.ts
+
+  query:
+    root: https://query.openfoodfacts.org/openapi.json
+    x-openapi-ts:
+      output: ./src/schemas/query.ts

@@ -53,6 +53,23 @@ const client = new OpenFoodFacts(fetch);
 
 - See the [SDK auto generated documentation](https://openfoodfacts.github.io/openfoodfacts-js/) for a complete list of available methods and classes.
 
+### Facet aggregations
+
+Use the query service to get facet values and their product counts, optionally filtered by other supported product fields:
+
+```ts
+const brands = await client.query.getFacetValues("brands_tags", {
+  filter: { countries_tags: "en:france" },
+  limit: 20,
+});
+
+const distinctBrandCount = await client.query.countFacetValues("brands_tags", {
+  filter: { countries_tags: "en:france" },
+});
+```
+
+These methods use only the query service's supported `$match`, `$group`, `$limit`, `$skip`, and `$count` stages. Filters accept scalar values or the supported `$ne`, `$lt`, `$lte`, `$gt`, `$gte`, `$all`, `$in`, and `$nin` operators. For the existing Product Opener endpoints that return predefined facet values, use `client.getFacet()` and `client.getFacetValue()`.
+
 ## Development
 
 ### Prerequisites
