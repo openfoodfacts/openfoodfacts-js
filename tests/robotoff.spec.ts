@@ -74,4 +74,19 @@ describe("Robotoff", () => {
     expect(res.error).toBeUndefined();
     expect(res.data).toBeUndefined();
   });
+
+  it("loads logo details by id", async () => {
+    const mockData = {
+      annotation_type: "brand",
+      annotation_value: "test-brand",
+      annotation_value_tag: "test-tag",
+    };
+    fetchMock.mockResolvedValue(mockResponse(mockData));
+
+    const res = await robotoff.loadLogo(testLogoId);
+
+    expect(res).toBeDefined();
+    expect(res?.annotation_type).toBe("brand");
+    expect(res?.annotation_value).toBe("test-brand");
+  });
 });
