@@ -183,4 +183,72 @@ describe("SearchApi Wrapper", () => {
       expect(result.response.status).toBe(503);
     });
   });
+
+  describe("Malformed responses", () => {
+    let consoleSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleSpy.mockRestore();
+    });
+
+    it("should return null data when POST search 200 response body is null", async () => {
+      // openapi-fetch treats 200 + null body as data === null; SDK must not crash.
+      fetchMock.mockResolvedValue(mockResponse(null));
+
+      const result = await client.search({
+        q: "test",
+        langs: ["en"],
+        page_size: 20,
+        page: 1,
+      });
+
+      expect(result.data).toBeNull();
+      expect(result.response.status).toBe(200);
+    });
+
+    it.each([
+      ["hits field is missing", { count: 0 }],
+      ["hits is a non-array value", { count: 1, hits: {} }],
+    ])(
+      "should normalise hits to [] for POST search when %s",
+      async (_label, responseBody) => {
+        fetchMock.mockResolvedValue(mockResponse(responseBody));
+
+        const result = await client.search({
+          q: "test",
+          langs: ["en"],
+          page_size: 20,
+          page: 1,
+        });
+
+        expect(result.data!.hits).toEqual([]);
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining("missing 'hits' field"),
+          expect.anything(),
+        );
+      },
+    );
+
+    it.each([
+      ["hits field is missing", { count: 0 }],
+      ["hits is a non-array value", { count: 1, hits: {} }],
+    ])(
+      "should normalise hits to [] for GET search when %s",
+      async (_label, responseBody) => {
+        fetchMock.mockResolvedValue(mockResponse(responseBody));
+
+        const result = await client.searchGet({ q: "test" });
+
+        expect(result.data!.hits).toEqual([]);
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining("missing 'hits' field"),
+          expect.anything(),
+        );
+      },
+    );
+  });
 });
