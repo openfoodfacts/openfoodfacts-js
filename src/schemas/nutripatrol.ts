@@ -38,6 +38,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Reasons
+         * @description List the reasons a flag can be filed under.
+         *
+         *     Served so that a client does not have to keep its own copy of the
+         *     taxonomy in step with this one -- which is what went wrong before: the
+         *     form, the filters and this API each had a list, and filtering by a reason
+         *     the form actually submitted answered 422.
+         *
+         *     Open to anyone logged in: it describes the form, and holds no report.
+         */
+        get: operations["get_reasons_api_v1_reasons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/flags": {
         parameters: {
             query?: never;
@@ -49,7 +76,8 @@ export interface paths {
          * Get Flags
          * @description Get all flags.
          *
-         *     This function is used to get all flags.
+         *     A moderator gets every flag. Any other logged-in user gets the flags they
+         *     raised themselves, and only those.
          */
         get: operations["get_flags_api_v1_flags_get"];
         put?: never;
@@ -81,7 +109,9 @@ export interface paths {
          * Get Flag
          * @description Get a flag by ID.
          *
-         *     This function is used to get a flag by its ID.
+         *     A flag is readable by its author and by the moderators. For anyone else
+         *     it answers 404, the same as a flag that does not exist: that someone
+         *     reported a given product is itself part of what the flag discloses.
          */
         get: operations["get_flag_api_v1_flags__flag_id__get"];
         put?: never;
@@ -103,7 +133,8 @@ export interface paths {
          * Get Tickets
          * @description Get all tickets.
          *
-         *     This function is used to get all tickets with status open.
+         *     A moderator lists every ticket. Any other logged-in user lists only the
+         *     tickets one of their own flags is attached to.
          */
         get: operations["get_tickets_api_v1_tickets_get"];
         put?: never;
@@ -125,7 +156,7 @@ export interface paths {
          * Get Ticket
          * @description Get a ticket by ID.
          *
-         *     This function is used to get a ticket by its ID.
+         *     Readable by the moderators, and by the users who flagged it.
          */
         get: operations["get_ticket_api_v1_tickets__ticket_id__get"];
         put?: never;
@@ -149,7 +180,9 @@ export interface paths {
          * Get Flags By Ticket Batch
          * @description Get all flags for tickets by IDs.
          *
-         *     This function is used to get all flags for tickets by there IDs.
+         *     A moderator gets every flag on those tickets. Any other logged-in user
+         *     gets only their own, so a ticket they flagged comes back holding their
+         *     flag alone. A ticket they did not flag is simply absent from the answer.
          */
         post: operations["get_flags_by_ticket_batch_api_v1_flags_batch_post"];
         delete?: never;
@@ -173,6 +206,49 @@ export interface paths {
          *     This function is used to update the status of a ticket by its ID.
          */
         put: operations["update_ticket_status_api_v1_tickets__ticket_id__status_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tickets/{ticket_id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Ticket Actions
+         * @description Get the moderation history of a ticket, most recent first.
+         *
+         *     Readable by the moderators, and by the users who flagged the ticket: what
+         *     was done about a report is answered to whoever made it.
+         */
+        get: operations["get_ticket_actions_api_v1_tickets__ticket_id__actions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/moderator_actions/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Actions
+         * @description Get the moderation history of the current user, most recent first.
+         */
+        get: operations["get_my_actions_api_v1_moderator_actions_me_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -224,10 +300,165 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/{barcode}/images/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Product Images
+         * @description Delete images of a product on Open Food Facts.
+         *
+         *     Open Food Facts moves them to the trash rather than erasing them, so the
+         *     action can be reviewed afterwards.
+         */
+        post: operations["delete_product_images_api_v1_products__barcode__images_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{barcode}/images/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move Product Images
+         * @description Move images of a product to another product on Open Food Facts.
+         *
+         *     Used when an image was uploaded on the wrong barcode: it belongs to a real
+         *     product, so it is moved rather than deleted.
+         */
+        post: operations["move_product_images_api_v1_products__barcode__images_move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{barcode}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete Off Product
+         * @description Delete a product on Open Food Facts.
+         *
+         *     Open Food Facts flags the product as deleted rather than erasing it: a
+         *     moderator can undo it from the product edit form.
+         */
+        post: operations["delete_off_product_api_v1_products__barcode__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{barcode}/change_barcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change Product Barcode
+         * @description Change the barcode of a product on Open Food Facts.
+         *
+         *     Open Food Facts refuses the change if a product already exists under the
+         *     new barcode.
+         */
+        post: operations["change_product_barcode_api_v1_products__barcode__change_barcode_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{barcode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Off Product
+         * @description Edit product fields on Open Food Facts.
+         */
+        patch: operations["update_off_product_api_v1_products__barcode__patch"];
+        trace?: never;
+    };
+    "/api/v1/products/{barcode}/obsolete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Product Obsolete
+         * @description Mark a product as no longer sold on Open Food Facts, or un-mark it.
+         */
+        post: operations["set_product_obsolete_api_v1_products__barcode__obsolete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ChangeBarcodeRequest */
+        ChangeBarcodeRequest: {
+            /** @description Flavor (project) the product belongs to */
+            flavor: components["schemas"]["Flavor"];
+            /**
+             * New Barcode
+             * @description Barcode to give the product instead of the current one
+             */
+            new_barcode: string;
+        };
+        /** ChangeBarcodeResponse */
+        ChangeBarcodeResponse: {
+            /**
+             * Barcode
+             * @description New barcode of the product
+             */
+            barcode: string;
+            /**
+             * Old Barcode
+             * @description Barcode the product had before
+             */
+            old_barcode: string;
+        };
         /** Flag */
         Flag: {
             /**
@@ -265,7 +496,8 @@ export interface components {
             flavor: components["schemas"]["Flavor"];
             /**
              * Reason
-             * @description Reason for flagging provided by the user. The field is optional.
+             * @description Why the content was reported, from the list `GET /reasons` serves. The field is optional.
+             * @example wrong_barcode
              */
             reason?: string | null;
             /**
@@ -274,11 +506,15 @@ export interface components {
              */
             comment?: string | null;
             /**
-             * Created At
-             * Format: date-time
-             * @description Creation datetime of the flag
+             * Extra Data
+             * @description Structured details about the report. Which keys are accepted depends on `reason`, and unknown ones are refused. Every key is optional: a flag carrying only `reason` and `comment` stays valid. `GET /reasons` describes the keys each reason takes.
+             * @example {
+             *       "correct_barcode": "4335619032118"
+             *     }
              */
-            created_at?: string;
+            extra_data?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Id
              * @description ID of the flag
@@ -294,6 +530,17 @@ export interface components {
              * @description Device ID of the flagger
              */
             device_id: string;
+            /**
+             * Product Revision
+             * @description Revision of the Open Food Facts product when the flag was created. It is captured from Open Food Facts on creation, and is null if the flag is not about a product, or if Open Food Facts could not be reached.
+             */
+            product_revision?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation datetime of the flag, in UTC. It is stamped by the server when the flag is saved: a client cannot set it.
+             */
+            created_at: string;
         };
         /** FlagCreate */
         FlagCreate: {
@@ -332,7 +579,8 @@ export interface components {
             flavor: components["schemas"]["Flavor"];
             /**
              * Reason
-             * @description Reason for flagging provided by the user. The field is optional.
+             * @description Why the content was reported, from the list `GET /reasons` serves. The field is optional.
+             * @example wrong_barcode
              */
             reason?: string | null;
             /**
@@ -341,11 +589,15 @@ export interface components {
              */
             comment?: string | null;
             /**
-             * Created At
-             * Format: date-time
-             * @description Creation datetime of the flag
+             * Extra Data
+             * @description Structured details about the report. Which keys are accepted depends on `reason`, and unknown ones are refused. Every key is optional: a flag carrying only `reason` and `comment` stays valid. `GET /reasons` describes the keys each reason takes.
+             * @example {
+             *       "correct_barcode": "4335619032118"
+             *     }
              */
-            created_at?: string;
+            extra_data?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** FlagsByTicketIdRequest */
         FlagsByTicketIdRequest: {
@@ -370,6 +622,21 @@ export interface components {
             flags: components["schemas"]["Flag"][];
         };
         /**
+         * GetModeratorActionsResponse
+         * @description Response model for ticket- and user-scoped moderator action listings.
+         */
+        GetModeratorActionsResponse: {
+            /** Actions */
+            actions: components["schemas"]["ModeratorAction"][];
+            /** Total */
+            total: number;
+        };
+        /** GetReasonsResponse */
+        GetReasonsResponse: {
+            /** Reasons */
+            reasons: components["schemas"]["ReasonDescription"][];
+        };
+        /**
          * GetTicketsResponse
          * @description Response model for get_tickets endpoint.
          */
@@ -378,6 +645,8 @@ export interface components {
             tickets: components["schemas"]["Ticket"][];
             /** Max Page */
             max_page: number;
+            /** Total */
+            total: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -385,17 +654,209 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * ImageActionRequest
+         * @description Common body of the image actions: which images, on which flavor.
+         */
+        ImageActionRequest: {
+            /**
+             * Imgids
+             * @description Ids of the *uploaded* images to act on. The id of a selected image (`front_fr`) is not accepted here: it designates a crop of an uploaded image, and Open Food Facts ignores it.
+             * @example [
+             *       1,
+             *       2
+             *     ]
+             */
+            imgids: number[];
+            /** @description Flavor (project) the product belongs to */
+            flavor: components["schemas"]["Flavor"];
+        };
+        /** ImageActionResponse */
+        ImageActionResponse: {
+            /**
+             * Barcode
+             * @description Barcode the images were taken from
+             */
+            barcode: string;
+            /**
+             * Imgids
+             * @description Ids of the images acted on
+             */
+            imgids: number[];
+            /**
+             * Remaining Imgids
+             * @description Ids of the images the source product is left with, as reported by Open Food Facts once the action was applied
+             */
+            remaining_imgids: number[];
+        };
+        /** ImageMoveRequest */
+        ImageMoveRequest: {
+            /**
+             * Imgids
+             * @description Ids of the *uploaded* images to act on. The id of a selected image (`front_fr`) is not accepted here: it designates a crop of an uploaded image, and Open Food Facts ignores it.
+             * @example [
+             *       1,
+             *       2
+             *     ]
+             */
+            imgids: number[];
+            /** @description Flavor (project) the product belongs to */
+            flavor: components["schemas"]["Flavor"];
+            /**
+             * Move To
+             * @description Barcode of the product to move the images to. Open Food Facts creates that product if it does not exist yet.
+             */
+            move_to: string;
+            /**
+             * Copy Data
+             * @description When the destination product is created, also copy the source product's fields (name, brands, categories...) onto it.
+             * @default false
+             */
+            copy_data: boolean;
+        };
+        /**
          * IssueType
          * @description Type of the flag/ticket.
          * @enum {string}
          */
         IssueType: "product" | "image" | "search";
+        /** ModeratorAction */
+        ModeratorAction: {
+            /**
+             * Id
+             * @description ID of the moderator action
+             */
+            id: number;
+            /** @description The new ticket status this action set */
+            action_type: components["schemas"]["TicketStatus"];
+            /**
+             * User Id
+             * @description Open Food Facts User ID of the moderator
+             */
+            user_id: string;
+            /**
+             * Ticket Id
+             * @description ID of the ticket this action was taken on
+             */
+            ticket_id: number;
+            /**
+             * Created At
+             * Format: date-time
+             * @description When the action was taken
+             */
+            created_at: string;
+        };
+        /** ObsoleteRequest */
+        ObsoleteRequest: {
+            /** @description Flavor (project) the product belongs to */
+            flavor: components["schemas"]["Flavor"];
+            /**
+             * Obsolete
+             * @description Whether the product is no longer sold. Obsolete products are kept, but left out of search results.
+             */
+            obsolete: boolean;
+            /**
+             * Comment
+             * @description Reason for the edit, recorded in the product history
+             */
+            comment?: string | null;
+        };
+        /** ProductActionResponse */
+        ProductActionResponse: {
+            /**
+             * Barcode
+             * @description Barcode of the product acted on
+             */
+            barcode: string;
+        };
+        /** ProductDeleteRequest */
+        ProductDeleteRequest: {
+            /** @description Flavor (project) the product belongs to */
+            flavor: components["schemas"]["Flavor"];
+            /**
+             * Comment
+             * @description Reason for the deletion. Open Food Facts records it in the product history, so it should say why the product was removed.
+             */
+            comment: string;
+        };
+        /** ProductUpdateRequest */
+        ProductUpdateRequest: {
+            /** @description Flavor (project) the product belongs to */
+            flavor: components["schemas"]["Flavor"];
+            /**
+             * Fields
+             * @description Product fields to write, using the names of the Open Food Facts write API v3. Open Food Facts warns about the fields it does not recognise instead of failing, so a typo silently does nothing.
+             * @example {
+             *       "categories": "en:biscuits",
+             *       "product_name_fr": "Petit beurre"
+             *     }
+             */
+            fields: {
+                [key: string]: unknown;
+            };
+            /**
+             * Comment
+             * @description Reason for the edit, recorded in the product history
+             */
+            comment?: string | null;
+            /**
+             * Lc
+             * @description Language the values of the localized fields are written in
+             * @default en
+             */
+            lc: string;
+        };
+        /** ProductUpdateResponse */
+        ProductUpdateResponse: {
+            /**
+             * Barcode
+             * @description Barcode of the product acted on
+             */
+            barcode: string;
+            /**
+             * Updated Fields
+             * @description The fields as Open Food Facts saved them
+             */
+            updated_fields: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * ReasonDescription
+         * @description One reason, and what a report filed under it can carry.
+         */
+        ReasonDescription: {
+            /** @description Value to send as a flag's `reason` */
+            value: components["schemas"]["ReasonType"];
+            /**
+             * Types
+             * @description Types of issue the flag form offers this reason for. It is not enforced: the API accepts any reason for any type, because the clients disagree on the point.
+             */
+            types: components["schemas"]["IssueType"][];
+            /**
+             * Bot Only
+             * @description Whether the reason belongs to an automated source and is not offered to people.
+             */
+            bot_only: boolean;
+            /**
+             * Extra Data Schema
+             * @description JSON Schema of the `extra_data` this reason accepts, or null when it accepts none.
+             */
+            extra_data_schema: {
+                [key: string]: unknown;
+            } | null;
+        };
         /**
          * ReasonType
-         * @description Type of the reason for flagging.
+         * @description Why a product, an image or a search result was reported.
+         *
+         *     The counts are the flags that carried each value when the taxonomy was
+         *     drawn up, over the 17 405 flags of closed tickets. They are there to say
+         *     which reasons matter, and which ones were invented to catch reports that
+         *     had nowhere to go: those used to pile up under `other`, which is why it is
+         *     the second most frequent value in the table.
          * @enum {string}
          */
-        ReasonType: "inappropriate" | "human" | "beauty" | "other";
+        ReasonType: "other" | "wrong_data" | "missing_data" | "wrong_barcode" | "not_a_product" | "duplicate_product" | "discontinued" | "spam_or_vandalism" | "legal_takedown" | "product_complaint" | "inappropriate" | "copyright" | "includes_personal_infos" | "wrong_product" | "duplicate" | "outdated" | "delete_request" | "no_results" | "wrong_results" | "human" | "beauty";
         /**
          * SourceType
          * @enum {string}
@@ -495,12 +956,22 @@ export interface components {
              * @description ID of the ticket
              */
             id: number;
+            /**
+             * Image Uploader
+             * @description Open Food Facts User ID of the user who uploaded the flagged image. Can be null if the ticket is not about an image, or if the image had already been deleted by then.
+             */
+            image_uploader?: string | null;
+            /**
+             * Image Uploaded At
+             * @description Upload datetime of the flagged image
+             */
+            image_uploaded_at?: string | null;
         };
         /**
          * TicketStatus
          * @enum {string}
          */
-        TicketStatus: "open" | "closed";
+        TicketStatus: "open" | "closed" | "closed-no-issue" | "closed-fixed";
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -555,6 +1026,26 @@ export interface operations {
                 };
                 content: {
                     "text/plain": string;
+                };
+            };
+        };
+    };
+    get_reasons_api_v1_reasons_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetReasonsResponse"];
                 };
             };
         };
@@ -649,7 +1140,10 @@ export interface operations {
                 barcode?: string | null;
                 status?: components["schemas"]["TicketStatus"] | null;
                 type_?: components["schemas"]["IssueType"] | null;
+                flavor?: components["schemas"]["Flavor"] | null;
                 reason?: components["schemas"]["ReasonType"][] | null;
+                sort_by?: string;
+                sort_order?: "asc" | "desc";
                 page?: number;
                 page_size?: number;
             };
@@ -696,7 +1190,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["Ticket"];
                 };
             };
             /** @description Validation Error */
@@ -776,6 +1270,72 @@ export interface operations {
             };
         };
     };
+    get_ticket_actions_api_v1_tickets__ticket_id__actions_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                ticket_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetModeratorActionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_actions_api_v1_moderator_actions_me_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetModeratorActionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_stats_api_v1_stats_get: {
         parameters: {
             query?: {
@@ -823,6 +1383,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+        };
+    };
+    delete_product_images_api_v1_products__barcode__images_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barcode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageActionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_product_images_api_v1_products__barcode__images_move_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barcode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageMoveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageActionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_off_product_api_v1_products__barcode__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barcode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductActionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_product_barcode_api_v1_products__barcode__change_barcode_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barcode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeBarcodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeBarcodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_off_product_api_v1_products__barcode__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barcode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_product_obsolete_api_v1_products__barcode__obsolete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                barcode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObsoleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

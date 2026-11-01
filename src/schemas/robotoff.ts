@@ -578,33 +578,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/predict/category": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Predict categories for a product
-         * @description Predictions are performed using a neural model.
-         *     As input, you can either provide:
-         *
-         *     - the `barcode` of a product: Robotoff will fetch the product from
-         *       Product Opener and will use this data as inputs to predict categories.
-         *     - expected inputs under a `product` key. The neural category model
-         *       accepts the following fields as input: `product_name`, `ingredients_tags`,
-         *       `ocr`, `nutriments`, `image_embeddings`. All fields are optional (but you should at least provide one).
-         */
-        post: operations["predictCategory"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/predict/nutrition": {
         parameters: {
             query?: never;
@@ -1535,7 +1508,7 @@ export interface operations {
                         /** @enum {string} */
                         status?: "no_image_predictions" | "found";
                         image_predictions?: Record<string, unknown>[];
-                        /** @description The total number of results with the provided filters */
+                        /** @description The total number of results with the provided filters. The count is limited to 1000 for performance. */
                         count?: number;
                     };
                 };
@@ -2156,121 +2129,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    predictCategory: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /**
-                     * @description The barcode of the product to categorize
-                     * @example 0748162621021
-                     */
-                    barcode: string;
-                    /**
-                     * @description The server type (=project) to use, such as 'off' (Open Food Facts), 'obf' (Open Beauty Facts),...
-                     *     Only 'off' is currently supported for category prediction
-                     * @default off
-                     * @enum {string}
-                     */
-                    server_type?: "off" | "obf" | "opff" | "opf";
-                    /**
-                     * @description If true, only return the deepest elements in the category taxonomy
-                     *     (don't return categories that are parents of other predicted categories)
-                     */
-                    deepest_only?: boolean;
-                    /**
-                     * @description The score above which we consider the category to be detected
-                     * @default 0.5
-                     */
-                    threshold?: number;
-                } | {
-                    /**
-                     * @description product information used as model input. All fields are optional, but at
-                     *     least one field must be provided.
-                     */
-                    product: {
-                        /** @example roasted chicken */
-                        product_name?: string;
-                        /**
-                         * @description the ingredient list, as an ordered list of ingredient tags
-                         * @example [
-                         *       "en:chicken",
-                         *       "en:salts"
-                         *     ]
-                         */
-                        ingredients_tags?: string[];
-                        /**
-                         * @description Embeddings of the 10 most recent product images generated with clip-vit-base-patch32 model.
-                         *     Each item of the list is the embedding of a single image, provided as a list of dimension 512.
-                         *     Shape: (num_images, 512)
-                         */
-                        image_embeddings?: number[][];
-                        /**
-                         * @description A list of string corresponding to the text extracted from the product images with OCR.
-                         *     Each element of the list is the text of a single image, the list order doesn't affect predictions.
-                         *     We use OCR text to detect ingredient mentions and use it as a model input.
-                         *     For optimal results, this field should be provided even if `ingredients_tags` is provided.
-                         */
-                        ocr?: string[];
-                        /**
-                         * @description Nutriment values. These fields have exactly the same meaning as those of Product Opener.
-                         *     All fields are optional, only send data for the field for which the value is not missing.
-                         */
-                        nutriments?: {
-                            fat_100g?: number;
-                            "saturated-fat_100g"?: number;
-                            carbohydrates_100g?: number;
-                            sugars_100g?: number;
-                            fiber_100g?: number;
-                            proteins_100g?: number;
-                            salt_100g?: number;
-                            "energy-kcal_100g"?: number;
-                            "fruits-vegetables-nuts_100g"?: number;
-                        };
-                    };
-                    /**
-                     * @description If true, only return the deepest elements in the category taxonomy
-                     *     (don't return categories that are parents of other predicted categories)
-                     */
-                    deepest_only?: boolean;
-                    /**
-                     * @description The score above which we consider the category to be detected
-                     * @default 0.5
-                     */
-                    threshold?: number;
-                };
-            };
-        };
-        responses: {
-            /** @description the category predictions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        neural?: {
-                            /**
-                             * @description The predicted `value_tag`
-                             * @example en:roast-chicken
-                             */
-                            value_tag: string;
-                            /**
-                             * @description The confidence score of the model
-                             * @example 0.6
-                             */
-                            confidence: number;
-                        }[];
-                    };
-                };
             };
         };
     };

@@ -36,21 +36,71 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Authentication: provide username/password
+         * @description Authentication: provide username/password or a keycloak access_token
          *     and get a bearer token in return.
          *
          *     - **username**: Open Food Facts user_id (not email)
          *     - **password**: user password (clear text, but HTTPS encrypted)
          *
+         *     - **access_token**: keycloak access_token (clear text)
+         *
          *     A **token** is returned. If the **set_cookie** parameter is set to 1,
-         *     the token is also set as a cookie named "session" in the response.
+         *     the token is also set as a cookie named "opsession" in the response.
          *
          *     To authenticate, you can either:
          *     - use the **Authorization** header with the **Bearer** scheme,
          *     e.g.: "Authorization: bearer token"
-         *     - use the **session** cookie, e.g.: "Cookie: session=token"
+         *     - use the **opsession** cookie, e.g.: "Cookie: opsession=token"
          */
         post: operations["auth_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["badges_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/badges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["badges_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/badges/{id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["badges_users_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -166,6 +216,27 @@ export interface paths {
          *     the date of that price, and the total sum.
          */
         get: operations["locations_compare_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/locations/nearby": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Return locations within a given radius of a center point.
+         *     Results are ordered by distance (closest first), then by id.
+         *     Each result includes a computed `distance_km` field.
+         */
+        get: operations["locations_nearby_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -478,6 +549,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/proofs/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["proofs_drafts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/drafts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["proofs_drafts_retrieve"];
+        put?: never;
+        post?: never;
+        delete: operations["proofs_drafts_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Finalize a draft proof - set draft=False and add full metadata. */
+        patch: operations["proofs_drafts_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/proofs/drafts/{id}/anonymize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anonymize a receipt. */
+        post: operations["proofs_drafts_anonymize_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/proofs/drafts/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Upload a draft proof.
+         *
+         *     Only the file and type fields are expected. ML models runs immediately asynchronously.
+         */
+        post: operations["proofs_drafts_upload_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/proofs/process-with-gemini": {
         parameters: {
             query?: never;
@@ -622,10 +764,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/{user_id}/badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["users_badges_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Badge: {
+            readonly id: number;
+            name: string;
+            description?: string | null;
+            /** Format: uri */
+            image_url?: string | null;
+            metric: components["schemas"]["MetricEnum"];
+            threshold: number;
+            user_count?: number;
+            /** Format: date-time */
+            created?: string;
+            /** Format: date-time */
+            readonly updated: string;
+        };
+        BadgeUser: {
+            readonly id: number;
+            readonly user: components["schemas"]["User"];
+            /** Format: date-time */
+            achieved_at?: string;
+            badge: number;
+        };
         /** @enum {unknown} */
         BlankEnum: "";
         Challenge: {
@@ -640,8 +819,14 @@ export interface components {
             start_date?: string | null;
             /** Format: date */
             end_date?: string | null;
+            /** @description Restrict to one or multiple categories (optional) */
             categories?: string[];
+            /** @description Full category tags with parents, used for matching & stats (readonly) */
+            categories_full?: string[];
             example_proof_url?: string | null;
+            promo_banner_image_url?: string | null;
+            promo_banner_url?: string | null;
+            promo_banner_alt_text?: string | null;
             is_published?: boolean;
             stats?: unknown;
             /** Format: date-time */
@@ -994,6 +1179,10 @@ export interface components {
          * @enum {string}
          */
         DiscountTypeEnum: "QUANTITY" | "SALE" | "SEASONAL" | "LOYALTY_PROGRAM" | "EXPIRES_SOON" | "PICK_IT_YOURSELF" | "SECOND_HAND" | "OTHER";
+        /** @description Serializer for payload when anonymizing a receipt. */
+        DraftProofAnonymizeRequest: {
+            bounding_boxes: number[][];
+        };
         Flag: {
             readonly id: number;
             readonly content_type: string;
@@ -1012,7 +1201,7 @@ export interface components {
         FlagCreate: {
             reason: components["schemas"]["ReasonEnum"];
             comment?: string | null;
-            readonly content_object: string;
+            readonly content_object: number;
         };
         /**
          * @description * `OPEN` - Open
@@ -1032,6 +1221,7 @@ export interface components {
         HistoryTypeEnum: "+" | "~" | "-";
         Location: {
             readonly id: number;
+            readonly osm_brand_logo_url: string;
             type: components["schemas"]["LocationTypeEnum"];
             /** Format: int64 */
             osm_id?: number | null;
@@ -1040,6 +1230,7 @@ export interface components {
             osm_display_name?: string | null;
             osm_tag_key?: string | null;
             osm_tag_value?: string | null;
+            osm_tags?: string[];
             osm_brand?: string | null;
             osm_address_postcode?: string | null;
             osm_address_city?: string | null;
@@ -1050,6 +1241,8 @@ export interface components {
             /** Format: double */
             osm_lon?: number | null;
             osm_version?: number | null;
+            /** Format: date-time */
+            osm_version_date?: string | null;
             /** Format: uri */
             website_url?: string | null;
             price_count?: number;
@@ -1079,6 +1272,44 @@ export interface components {
             /** Format: uri */
             website_url?: string | null;
         };
+        LocationNearby: {
+            readonly id: number;
+            readonly osm_brand_logo_url: string;
+            /** Format: double */
+            readonly distance_km: number;
+            type: components["schemas"]["LocationTypeEnum"];
+            /** Format: int64 */
+            osm_id?: number | null;
+            osm_type?: (components["schemas"]["LocationOsmTypeEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            osm_name?: string | null;
+            osm_display_name?: string | null;
+            osm_tag_key?: string | null;
+            osm_tag_value?: string | null;
+            osm_tags?: string[];
+            osm_brand?: string | null;
+            osm_address_postcode?: string | null;
+            osm_address_city?: string | null;
+            osm_address_country?: string | null;
+            osm_address_country_code?: string | null;
+            /** Format: double */
+            osm_lat?: number | null;
+            /** Format: double */
+            osm_lon?: number | null;
+            osm_version?: number | null;
+            /** Format: date-time */
+            osm_version_date?: string | null;
+            /** Format: uri */
+            website_url?: string | null;
+            price_count?: number;
+            user_count?: number;
+            product_count?: number;
+            proof_count?: number;
+            source?: string | null;
+            /** Format: date-time */
+            created?: string;
+            /** Format: date-time */
+            readonly updated: string;
+        };
         /**
          * @description * `NODE` - NODE
          *     * `WAY` - WAY
@@ -1093,13 +1324,77 @@ export interface components {
          */
         LocationTypeEnum: "OSM" | "ONLINE";
         Login: {
-            username: string;
-            password: string;
+            username?: string;
+            password?: string;
+            access_token?: string;
         };
+        /**
+         * @description * `price_count` - price_count
+         *     * `price_in_proof_not_owned_count` - price_in_proof_not_owned_count
+         *     * `proof_count` - proof_count
+         *     * `proof_type_price_tag_count` - proof_type_price_tag_count
+         *     * `proof_type_receipt_count` - proof_type_receipt_count
+         *     * `proof_type_gdpr_request_count` - proof_type_gdpr_request_count
+         *     * `proof_type_shop_import_count` - proof_type_shop_import_count
+         *     * `location_count` - location_count
+         *     * `location_type_osm_city_count` - location_type_osm_city_count
+         *     * `location_type_osm_country_count` - location_type_osm_country_count
+         *     * `currency_count` - currency_count
+         *     * `year_count` - year_count
+         *     * `challenge_count` - challenge_count
+         * @enum {string}
+         */
+        MetricEnum: "price_count" | "price_in_proof_not_owned_count" | "proof_count" | "proof_type_price_tag_count" | "proof_type_receipt_count" | "proof_type_gdpr_request_count" | "proof_type_shop_import_count" | "location_count" | "location_type_osm_city_count" | "location_type_osm_country_count" | "currency_count" | "year_count" | "challenge_count";
         /** @enum {unknown} */
         NullEnum: null;
+        PaginatedBadgeList: {
+            items: components["schemas"]["Badge"][];
+            /**
+             * @description Current page number
+             * @example 1
+             */
+            page: number;
+            /**
+             * @description Total number of pages
+             * @example 16
+             */
+            pages: number;
+            /**
+             * @description Number of items per page
+             * @example 100
+             */
+            size: number;
+            /**
+             * @description Total number of items
+             * @example 1531
+             */
+            total: number;
+        };
+        PaginatedBadgeUserList: {
+            items: components["schemas"]["BadgeUser"][];
+            /**
+             * @description Current page number
+             * @example 1
+             */
+            page: number;
+            /**
+             * @description Total number of pages
+             * @example 16
+             */
+            pages: number;
+            /**
+             * @description Number of items per page
+             * @example 100
+             */
+            size: number;
+            /**
+             * @description Total number of items
+             * @example 1531
+             */
+            total: number;
+        };
         PaginatedChallengeList: {
-            items: components["schemas"]["Challenge"][][];
+            items: components["schemas"]["Challenge"][];
             /**
              * @description Current page number
              * @example 1
@@ -1122,7 +1417,7 @@ export interface components {
             total: number;
         };
         PaginatedCountryCityList: {
-            items: components["schemas"]["CountryCity"][][];
+            items: components["schemas"]["CountryCity"][];
             /**
              * @description Current page number
              * @example 1
@@ -1145,7 +1440,7 @@ export interface components {
             total: number;
         };
         PaginatedCountryList: {
-            items: components["schemas"]["Country"][][];
+            items: components["schemas"]["Country"][];
             /**
              * @description Current page number
              * @example 1
@@ -1168,7 +1463,7 @@ export interface components {
             total: number;
         };
         PaginatedFlagList: {
-            items: components["schemas"]["Flag"][][];
+            items: components["schemas"]["Flag"][];
             /**
              * @description Current page number
              * @example 1
@@ -1191,7 +1486,30 @@ export interface components {
             total: number;
         };
         PaginatedLocationList: {
-            items: components["schemas"]["Location"][][];
+            items: components["schemas"]["Location"][];
+            /**
+             * @description Current page number
+             * @example 1
+             */
+            page: number;
+            /**
+             * @description Total number of pages
+             * @example 16
+             */
+            pages: number;
+            /**
+             * @description Number of items per page
+             * @example 100
+             */
+            size: number;
+            /**
+             * @description Total number of items
+             * @example 1531
+             */
+            total: number;
+        };
+        PaginatedLocationNearbyList: {
+            items: components["schemas"]["LocationNearby"][];
             /**
              * @description Current page number
              * @example 1
@@ -1214,7 +1532,7 @@ export interface components {
             total: number;
         };
         PaginatedPriceFullList: {
-            items: components["schemas"]["PriceFull"][][];
+            items: components["schemas"]["PriceFull"][];
             /**
              * @description Current page number
              * @example 1
@@ -1237,7 +1555,7 @@ export interface components {
             total: number;
         };
         PaginatedPriceHistoryList: {
-            items: components["schemas"]["PriceHistory"][][];
+            items: components["schemas"]["PriceHistory"][];
             /**
              * @description Current page number
              * @example 1
@@ -1260,7 +1578,7 @@ export interface components {
             total: number;
         };
         PaginatedPriceTagFullList: {
-            items: components["schemas"]["PriceTagFull"][][];
+            items: components["schemas"]["PriceTagFull"][];
             /**
              * @description Current page number
              * @example 1
@@ -1283,7 +1601,30 @@ export interface components {
             total: number;
         };
         PaginatedProductFullList: {
-            items: components["schemas"]["ProductFull"][][];
+            items: components["schemas"]["ProductFull"][];
+            /**
+             * @description Current page number
+             * @example 1
+             */
+            page: number;
+            /**
+             * @description Total number of pages
+             * @example 16
+             */
+            pages: number;
+            /**
+             * @description Number of items per page
+             * @example 100
+             */
+            size: number;
+            /**
+             * @description Total number of items
+             * @example 1531
+             */
+            total: number;
+        };
+        PaginatedProofFullList: {
+            items: components["schemas"]["ProofFull"][];
             /**
              * @description Current page number
              * @example 1
@@ -1306,7 +1647,7 @@ export interface components {
             total: number;
         };
         PaginatedProofHalfFullList: {
-            items: components["schemas"]["ProofHalfFull"][][];
+            items: components["schemas"]["ProofHalfFull"][];
             /**
              * @description Current page number
              * @example 1
@@ -1329,7 +1670,7 @@ export interface components {
             total: number;
         };
         PaginatedProofHistoryList: {
-            items: components["schemas"]["ProofHistory"][][];
+            items: components["schemas"]["ProofHistory"][];
             /**
              * @description Current page number
              * @example 1
@@ -1352,7 +1693,30 @@ export interface components {
             total: number;
         };
         PaginatedReceiptItemFullList: {
-            items: components["schemas"]["ReceiptItemFull"][][];
+            items: components["schemas"]["ReceiptItemFull"][];
+            /**
+             * @description Current page number
+             * @example 1
+             */
+            page: number;
+            /**
+             * @description Total number of pages
+             * @example 16
+             */
+            pages: number;
+            /**
+             * @description Number of items per page
+             * @example 100
+             */
+            size: number;
+            /**
+             * @description Total number of items
+             * @example 1531
+             */
+            total: number;
+        };
+        PaginatedUserBadgeList: {
+            items: components["schemas"]["UserBadge"][];
             /**
              * @description Current page number
              * @example 1
@@ -1375,7 +1739,7 @@ export interface components {
             total: number;
         };
         PaginatedUserList: {
-            items: components["schemas"]["User"][][];
+            items: components["schemas"]["User"][];
             /**
              * @description Current page number
              * @example 1
@@ -1449,6 +1813,7 @@ export interface components {
             image_url?: string | null;
             product_quantity?: number | null;
             product_quantity_unit?: string | null;
+            quantity?: string | null;
             categories_tags?: string[];
             brands?: string | null;
             brands_tags?: string[];
@@ -1456,6 +1821,7 @@ export interface components {
             nutriscore_grade?: string | null;
             ecoscore_grade?: string | null;
             nova_group?: number | null;
+            creator?: string | null;
             unique_scans_n?: number | null;
             price_count?: number;
             price_currency_count?: number;
@@ -1491,6 +1857,7 @@ export interface components {
             ready_for_price_tag_validation?: boolean;
             owner_consumption?: boolean | null;
             owner_comment?: string | null;
+            location_id?: number;
         };
         PatchedReceiptItemFull: {
             readonly id?: number;
@@ -1605,9 +1972,10 @@ export interface components {
         /**
          * @description * `UNIT` - UNIT
          *     * `KILOGRAM` - KILOGRAM
+         *     * `LITER` - LITER
          * @enum {string}
          */
-        PricePerEnum: "UNIT" | "KILOGRAM";
+        PricePerEnum: "UNIT" | "KILOGRAM" | "LITER";
         PriceStats: {
             price__count: number;
             /** Format: double */
@@ -1680,6 +2048,7 @@ export interface components {
              * @description The type of the prediction
              *
              *     * `PRICE_TAG_EXTRACTION` - PRICE_TAG_EXTRACTION
+             *     * `PRICE_TAG_CLF` - PRICE_TAG_CLF
              */
             type: components["schemas"]["PriceTagPredictionTypeEnum"];
             /** @description The name of the model that generated the prediction */
@@ -1698,9 +2067,10 @@ export interface components {
         };
         /**
          * @description * `PRICE_TAG_EXTRACTION` - PRICE_TAG_EXTRACTION
+         *     * `PRICE_TAG_CLF` - PRICE_TAG_CLF
          * @enum {string}
          */
-        PriceTagPredictionTypeEnum: "PRICE_TAG_EXTRACTION";
+        PriceTagPredictionTypeEnum: "PRICE_TAG_EXTRACTION" | "PRICE_TAG_CLF";
         /**
          * @description * `0` - deleted
          *     * `1` - linked_to_price
@@ -1767,6 +2137,7 @@ export interface components {
             image_url?: string | null;
             product_quantity?: number | null;
             product_quantity_unit?: string | null;
+            quantity?: string | null;
             categories_tags?: string[];
             brands?: string | null;
             brands_tags?: string[];
@@ -1774,6 +2145,7 @@ export interface components {
             nutriscore_grade?: string | null;
             ecoscore_grade?: string | null;
             nova_group?: number | null;
+            creator?: string | null;
             unique_scans_n?: number | null;
             price_count?: number;
             price_currency_count?: number;
@@ -1815,6 +2187,7 @@ export interface components {
             ready_for_price_tag_validation?: boolean;
             owner_consumption?: boolean | null;
             owner_comment?: string | null;
+            draft?: boolean;
             price_count?: number;
             prediction_count?: number;
             owner?: string | null;
@@ -1824,6 +2197,11 @@ export interface components {
             created?: string;
             /** Format: date-time */
             readonly updated: string;
+        };
+        /** @description Serializer for draft proof upload - accepts only the file and type fields. */
+        ProofDraftUpload: {
+            file: string;
+            type: components["schemas"]["ProofTypeEnum"];
         };
         ProofFull: {
             readonly id: number;
@@ -1856,6 +2234,7 @@ export interface components {
             ready_for_price_tag_validation?: boolean;
             owner_consumption?: boolean | null;
             owner_comment?: string | null;
+            draft?: boolean;
             price_count?: number;
             prediction_count?: number;
             owner?: string | null;
@@ -1896,6 +2275,7 @@ export interface components {
             ready_for_price_tag_validation?: boolean;
             owner_consumption?: boolean | null;
             owner_comment?: string | null;
+            draft?: boolean;
             price_count?: number;
             prediction_count?: number;
             owner?: string | null;
@@ -1941,9 +2321,10 @@ export interface components {
          * @description * `OBJECT_DETECTION` - OBJECT_DETECTION
          *     * `CLASSIFICATION` - CLASSIFICATION
          *     * `RECEIPT_EXTRACTION` - RECEIPT_EXTRACTION
+         *     * `RECEIPT_ANONYMIZATION` - RECEIPT_ANONYMIZATION
          * @enum {string}
          */
-        ProofPredictionTypeEnum: "OBJECT_DETECTION" | "CLASSIFICATION" | "RECEIPT_EXTRACTION";
+        ProofPredictionTypeEnum: "OBJECT_DETECTION" | "CLASSIFICATION" | "RECEIPT_EXTRACTION" | "RECEIPT_ANONYMIZATION";
         ProofProcessWithGemini: {
             files: string[];
             mode: string;
@@ -1979,6 +2360,7 @@ export interface components {
             ready_for_price_tag_validation?: boolean;
             owner_consumption?: boolean | null;
             owner_comment?: string | null;
+            location_id?: number;
         };
         ProofUpload: {
             file: string;
@@ -2126,6 +2508,13 @@ export interface components {
             user_count?: number;
             user_with_price_count?: number;
             challenge_count?: number;
+            badge_count?: number;
+            badge_with_user_count?: number;
+            product_created_count?: number;
+            product_created_source_off_count?: number;
+            product_created_source_obf_count?: number;
+            product_created_source_opff_count?: number;
+            product_created_source_opf_count?: number;
             /** Format: date-time */
             readonly updated: string;
         };
@@ -2140,14 +2529,27 @@ export interface components {
             price_in_proof_not_owned_count?: number;
             price_not_owned_in_proof_owned_count?: number;
             proof_count?: number;
+            proof_type_price_tag_count?: number;
+            proof_type_receipt_count?: number;
+            proof_type_gdpr_request_count?: number;
+            proof_type_shop_import_count?: number;
             proof_kind_community_count?: number;
             proof_kind_consumption_count?: number;
             location_count?: number;
+            location_type_osm_city_count?: number;
             location_type_osm_country_count?: number;
             product_count?: number;
+            badge_count?: number;
             currency_count?: number;
             year_count?: number;
             challenge_count?: number;
+        };
+        UserBadge: {
+            readonly id: number;
+            readonly badge: components["schemas"]["Badge"];
+            /** Format: date-time */
+            achieved_at?: string;
+            user: string;
         };
     };
     responses: never;
@@ -2193,12 +2595,15 @@ export interface operations {
     };
     auth_create: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Set to 1 to also return the access token in an "opsession" cookie. */
+                set_cookie?: 1;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/x-www-form-urlencoded": components["schemas"]["Login"];
                 "multipart/form-data": components["schemas"]["Login"];
@@ -2211,6 +2616,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+        };
+    };
+    badges_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                order_by?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedBadgeList"];
+                };
+            };
+        };
+    };
+    badges_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Badge. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Badge"];
+                };
+            };
+        };
+    };
+    badges_users_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Badge. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedBadgeUserList"];
                 };
             };
         };
@@ -2367,6 +2847,14 @@ export interface operations {
                 osm_address_city__like?: string;
                 osm_address_country__like?: string;
                 osm_name__like?: string;
+                osm_tag_key?: string;
+                osm_tag_value?: string;
+                /**
+                 * @description * `NODE` - NODE
+                 *     * `WAY` - WAY
+                 *     * `RELATION` - RELATION
+                 */
+                osm_type?: "NODE" | "RELATION" | "WAY" | null;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 price_count?: number;
@@ -2467,6 +2955,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocationCompare"];
+                };
+            };
+        };
+    };
+    locations_nearby_list: {
+        parameters: {
+            query: {
+                /** @description Latitude of the center point (decimal degrees, -90 to 90) */
+                lat: number;
+                /** @description Longitude of the center point (decimal degrees, -180 to 180) */
+                lon: number;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Search radius in kilometers (must be positive) */
+                radius_km: number;
+                /** @description Number of results to return per page. */
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLocationNearbyList"];
                 };
             };
         };
@@ -2576,6 +3094,7 @@ export interface operations {
                 status?: 0 | 1 | 10 | 2 | 3 | 4 | 5 | null;
                 status__isnull?: boolean;
                 tags__contains?: string;
+                tags__not_contains?: string;
             };
             header?: never;
             path?: never;
@@ -3030,6 +3549,8 @@ export interface operations {
                  */
                 kind?: "COMMUNITY" | "CONSUMPTION";
                 labels_tags__contains?: string;
+                /** @description Latitude of the center point (-90 to 90). Must be sent together with lon and radius_km. */
+                lat?: number;
                 location__osm_name__contains?: string;
                 /**
                  * @description * `OSM` - OSM
@@ -3047,6 +3568,8 @@ export interface operations {
                  *     * `RELATION` - RELATION
                  */
                 location_osm_type?: "NODE" | "RELATION" | "WAY" | null;
+                /** @description Longitude of the center point (-180 to 180). Must be sent together with lat and radius_km. */
+                lon?: number;
                 /** @description Which field to use when ordering the results. */
                 order_by?: string;
                 origins_tags__contains?: string;
@@ -3069,6 +3592,7 @@ export interface operations {
                  *     * `opf` - opf
                  */
                 product__source?: "obf" | "off" | "opf" | "opff" | null;
+                product__source__isnull?: boolean;
                 product_code?: string;
                 /** @description Multiple values may be separated by commas. */
                 product_code__in?: string[];
@@ -3089,6 +3613,8 @@ export interface operations {
                 /** @description Multiple values may be separated by commas. */
                 proof_id__in?: number[];
                 proof_id__isnull?: boolean;
+                /** @description Search radius in kilometers (0 or more). Must be sent together with lat and lon. */
+                radius_km?: number;
                 /** @description Number of results to return per page. */
                 size?: number;
                 tags__contains?: string;
@@ -3579,6 +4105,8 @@ export interface operations {
                  */
                 kind?: "COMMUNITY" | "CONSUMPTION";
                 labels_tags__contains?: string;
+                /** @description Latitude of the center point (-90 to 90). Must be sent together with lon and radius_km. */
+                lat?: number;
                 location__osm_name__contains?: string;
                 /**
                  * @description * `OSM` - OSM
@@ -3596,6 +4124,8 @@ export interface operations {
                  *     * `RELATION` - RELATION
                  */
                 location_osm_type?: "NODE" | "RELATION" | "WAY" | null;
+                /** @description Longitude of the center point (-180 to 180). Must be sent together with lat and radius_km. */
+                lon?: number;
                 /** @description Which field to use when ordering the results. */
                 order_by?: string;
                 origins_tags__contains?: string;
@@ -3618,6 +4148,7 @@ export interface operations {
                  *     * `opf` - opf
                  */
                 product__source?: "obf" | "off" | "opf" | "opff" | null;
+                product__source__isnull?: boolean;
                 product_code?: string;
                 /** @description Multiple values may be separated by commas. */
                 product_code__in?: string[];
@@ -3638,6 +4169,8 @@ export interface operations {
                 /** @description Multiple values may be separated by commas. */
                 proof_id__in?: number[];
                 proof_id__isnull?: boolean;
+                /** @description Search radius in kilometers (0 or more). Must be sent together with lat and lon. */
+                radius_km?: number;
                 /** @description Number of results to return per page. */
                 size?: number;
                 tags__contains?: string;
@@ -4007,6 +4540,8 @@ export interface operations {
                  */
                 kind?: "COMMUNITY" | "CONSUMPTION";
                 labels_tags__contains?: string;
+                /** @description Latitude of the center point (-90 to 90). Must be sent together with lon and radius_km. */
+                lat?: number;
                 location__osm_name__contains?: string;
                 /**
                  * @description * `OSM` - OSM
@@ -4024,6 +4559,8 @@ export interface operations {
                  *     * `RELATION` - RELATION
                  */
                 location_osm_type?: "NODE" | "RELATION" | "WAY" | null;
+                /** @description Longitude of the center point (-180 to 180). Must be sent together with lat and radius_km. */
+                lon?: number;
                 /** @description Which field to use when ordering the results. */
                 order_by?: string;
                 origins_tags__contains?: string;
@@ -4044,6 +4581,7 @@ export interface operations {
                  *     * `opf` - opf
                  */
                 product__source?: "obf" | "off" | "opf" | "opff" | null;
+                product__source__isnull?: boolean;
                 product_code?: string;
                 /** @description Multiple values may be separated by commas. */
                 product_code__in?: string[];
@@ -4064,6 +4602,8 @@ export interface operations {
                 /** @description Multiple values may be separated by commas. */
                 proof_id__in?: number[];
                 proof_id__isnull?: boolean;
+                /** @description Search radius in kilometers (0 or more). Must be sent together with lat and lon. */
+                radius_km?: number;
                 tags__contains?: string;
                 /**
                  * @description * `PRODUCT` - PRODUCT
@@ -4094,6 +4634,7 @@ export interface operations {
                 brands_tags__contains?: string;
                 categories_tags__contains?: string;
                 code?: string;
+                creator?: string;
                 ecoscore_grade?: string;
                 labels_tags__contains?: string;
                 nova_group?: number;
@@ -4590,6 +5131,7 @@ export interface operations {
                 /** @description Number of results to return per page. */
                 size?: number;
                 tags__contains?: string;
+                tags__not_contains?: string;
                 /**
                  * @description * `PRICE_TAG` - PRICE_TAG
                  *     * `RECEIPT` - RECEIPT
@@ -5072,6 +5614,7 @@ export interface operations {
                 /** @description Number of results to return per page. */
                 size?: number;
                 tags__contains?: string;
+                tags__not_contains?: string;
                 /**
                  * @description * `PRICE_TAG` - PRICE_TAG
                  *     * `RECEIPT` - RECEIPT
@@ -5095,6 +5638,512 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedProofHistoryList"];
+                };
+            };
+        };
+    };
+    proofs_drafts_list: {
+        parameters: {
+            query?: {
+                created__gte?: string;
+                created__lte?: string;
+                /**
+                 * @description * `ADP` - ADP
+                 *     * `AED` - AED
+                 *     * `AFA` - AFA
+                 *     * `AFN` - AFN
+                 *     * `ALK` - ALK
+                 *     * `ALL` - ALL
+                 *     * `AMD` - AMD
+                 *     * `ANG` - ANG
+                 *     * `AOA` - AOA
+                 *     * `AOK` - AOK
+                 *     * `AON` - AON
+                 *     * `AOR` - AOR
+                 *     * `ARA` - ARA
+                 *     * `ARL` - ARL
+                 *     * `ARM` - ARM
+                 *     * `ARP` - ARP
+                 *     * `ARS` - ARS
+                 *     * `ATS` - ATS
+                 *     * `AUD` - AUD
+                 *     * `AWG` - AWG
+                 *     * `AZM` - AZM
+                 *     * `AZN` - AZN
+                 *     * `BAD` - BAD
+                 *     * `BAM` - BAM
+                 *     * `BAN` - BAN
+                 *     * `BBD` - BBD
+                 *     * `BDT` - BDT
+                 *     * `BEC` - BEC
+                 *     * `BEF` - BEF
+                 *     * `BEL` - BEL
+                 *     * `BGL` - BGL
+                 *     * `BGM` - BGM
+                 *     * `BGN` - BGN
+                 *     * `BGO` - BGO
+                 *     * `BHD` - BHD
+                 *     * `BIF` - BIF
+                 *     * `BMD` - BMD
+                 *     * `BND` - BND
+                 *     * `BOB` - BOB
+                 *     * `BOL` - BOL
+                 *     * `BOP` - BOP
+                 *     * `BOV` - BOV
+                 *     * `BRB` - BRB
+                 *     * `BRC` - BRC
+                 *     * `BRE` - BRE
+                 *     * `BRL` - BRL
+                 *     * `BRN` - BRN
+                 *     * `BRR` - BRR
+                 *     * `BRZ` - BRZ
+                 *     * `BSD` - BSD
+                 *     * `BTN` - BTN
+                 *     * `BUK` - BUK
+                 *     * `BWP` - BWP
+                 *     * `BYB` - BYB
+                 *     * `BYN` - BYN
+                 *     * `BYR` - BYR
+                 *     * `BZD` - BZD
+                 *     * `CAD` - CAD
+                 *     * `CDF` - CDF
+                 *     * `CHE` - CHE
+                 *     * `CHF` - CHF
+                 *     * `CHW` - CHW
+                 *     * `CLE` - CLE
+                 *     * `CLF` - CLF
+                 *     * `CLP` - CLP
+                 *     * `CNH` - CNH
+                 *     * `CNX` - CNX
+                 *     * `CNY` - CNY
+                 *     * `COP` - COP
+                 *     * `COU` - COU
+                 *     * `CRC` - CRC
+                 *     * `CSD` - CSD
+                 *     * `CSK` - CSK
+                 *     * `CUC` - CUC
+                 *     * `CUP` - CUP
+                 *     * `CVE` - CVE
+                 *     * `CYP` - CYP
+                 *     * `CZK` - CZK
+                 *     * `DDM` - DDM
+                 *     * `DEM` - DEM
+                 *     * `DJF` - DJF
+                 *     * `DKK` - DKK
+                 *     * `DOP` - DOP
+                 *     * `DZD` - DZD
+                 *     * `ECS` - ECS
+                 *     * `ECV` - ECV
+                 *     * `EEK` - EEK
+                 *     * `EGP` - EGP
+                 *     * `ERN` - ERN
+                 *     * `ESA` - ESA
+                 *     * `ESB` - ESB
+                 *     * `ESP` - ESP
+                 *     * `ETB` - ETB
+                 *     * `EUR` - EUR
+                 *     * `FIM` - FIM
+                 *     * `FJD` - FJD
+                 *     * `FKP` - FKP
+                 *     * `FRF` - FRF
+                 *     * `GBP` - GBP
+                 *     * `GEK` - GEK
+                 *     * `GEL` - GEL
+                 *     * `GHC` - GHC
+                 *     * `GHS` - GHS
+                 *     * `GIP` - GIP
+                 *     * `GMD` - GMD
+                 *     * `GNF` - GNF
+                 *     * `GNS` - GNS
+                 *     * `GQE` - GQE
+                 *     * `GRD` - GRD
+                 *     * `GTQ` - GTQ
+                 *     * `GWE` - GWE
+                 *     * `GWP` - GWP
+                 *     * `GYD` - GYD
+                 *     * `HKD` - HKD
+                 *     * `HNL` - HNL
+                 *     * `HRD` - HRD
+                 *     * `HRK` - HRK
+                 *     * `HTG` - HTG
+                 *     * `HUF` - HUF
+                 *     * `IDR` - IDR
+                 *     * `IEP` - IEP
+                 *     * `ILP` - ILP
+                 *     * `ILR` - ILR
+                 *     * `ILS` - ILS
+                 *     * `INR` - INR
+                 *     * `IQD` - IQD
+                 *     * `IRR` - IRR
+                 *     * `ISJ` - ISJ
+                 *     * `ISK` - ISK
+                 *     * `ITL` - ITL
+                 *     * `JMD` - JMD
+                 *     * `JOD` - JOD
+                 *     * `JPY` - JPY
+                 *     * `KES` - KES
+                 *     * `KGS` - KGS
+                 *     * `KHR` - KHR
+                 *     * `KMF` - KMF
+                 *     * `KPW` - KPW
+                 *     * `KRH` - KRH
+                 *     * `KRO` - KRO
+                 *     * `KRW` - KRW
+                 *     * `KWD` - KWD
+                 *     * `KYD` - KYD
+                 *     * `KZT` - KZT
+                 *     * `LAK` - LAK
+                 *     * `LBP` - LBP
+                 *     * `LKR` - LKR
+                 *     * `LRD` - LRD
+                 *     * `LSL` - LSL
+                 *     * `LTL` - LTL
+                 *     * `LTT` - LTT
+                 *     * `LUC` - LUC
+                 *     * `LUF` - LUF
+                 *     * `LUL` - LUL
+                 *     * `LVL` - LVL
+                 *     * `LVR` - LVR
+                 *     * `LYD` - LYD
+                 *     * `MAD` - MAD
+                 *     * `MAF` - MAF
+                 *     * `MCF` - MCF
+                 *     * `MDC` - MDC
+                 *     * `MDL` - MDL
+                 *     * `MGA` - MGA
+                 *     * `MGF` - MGF
+                 *     * `MKD` - MKD
+                 *     * `MKN` - MKN
+                 *     * `MLF` - MLF
+                 *     * `MMK` - MMK
+                 *     * `MNT` - MNT
+                 *     * `MOP` - MOP
+                 *     * `MRO` - MRO
+                 *     * `MRU` - MRU
+                 *     * `MTL` - MTL
+                 *     * `MTP` - MTP
+                 *     * `MUR` - MUR
+                 *     * `MVP` - MVP
+                 *     * `MVR` - MVR
+                 *     * `MWK` - MWK
+                 *     * `MXN` - MXN
+                 *     * `MXP` - MXP
+                 *     * `MXV` - MXV
+                 *     * `MYR` - MYR
+                 *     * `MZE` - MZE
+                 *     * `MZM` - MZM
+                 *     * `MZN` - MZN
+                 *     * `NAD` - NAD
+                 *     * `NGN` - NGN
+                 *     * `NIC` - NIC
+                 *     * `NIO` - NIO
+                 *     * `NLG` - NLG
+                 *     * `NOK` - NOK
+                 *     * `NPR` - NPR
+                 *     * `NZD` - NZD
+                 *     * `OMR` - OMR
+                 *     * `PAB` - PAB
+                 *     * `PEI` - PEI
+                 *     * `PEN` - PEN
+                 *     * `PES` - PES
+                 *     * `PGK` - PGK
+                 *     * `PHP` - PHP
+                 *     * `PKR` - PKR
+                 *     * `PLN` - PLN
+                 *     * `PLZ` - PLZ
+                 *     * `PTE` - PTE
+                 *     * `PYG` - PYG
+                 *     * `QAR` - QAR
+                 *     * `RHD` - RHD
+                 *     * `ROL` - ROL
+                 *     * `RON` - RON
+                 *     * `RSD` - RSD
+                 *     * `RUB` - RUB
+                 *     * `RUR` - RUR
+                 *     * `RWF` - RWF
+                 *     * `SAR` - SAR
+                 *     * `SBD` - SBD
+                 *     * `SCR` - SCR
+                 *     * `SDD` - SDD
+                 *     * `SDG` - SDG
+                 *     * `SDP` - SDP
+                 *     * `SEK` - SEK
+                 *     * `SGD` - SGD
+                 *     * `SHP` - SHP
+                 *     * `SIT` - SIT
+                 *     * `SKK` - SKK
+                 *     * `SLE` - SLE
+                 *     * `SLL` - SLL
+                 *     * `SOS` - SOS
+                 *     * `SRD` - SRD
+                 *     * `SRG` - SRG
+                 *     * `SSP` - SSP
+                 *     * `STD` - STD
+                 *     * `STN` - STN
+                 *     * `SUR` - SUR
+                 *     * `SVC` - SVC
+                 *     * `SYP` - SYP
+                 *     * `SZL` - SZL
+                 *     * `THB` - THB
+                 *     * `TJR` - TJR
+                 *     * `TJS` - TJS
+                 *     * `TMM` - TMM
+                 *     * `TMT` - TMT
+                 *     * `TND` - TND
+                 *     * `TOP` - TOP
+                 *     * `TPE` - TPE
+                 *     * `TRL` - TRL
+                 *     * `TRY` - TRY
+                 *     * `TTD` - TTD
+                 *     * `TWD` - TWD
+                 *     * `TZS` - TZS
+                 *     * `UAH` - UAH
+                 *     * `UAK` - UAK
+                 *     * `UGS` - UGS
+                 *     * `UGX` - UGX
+                 *     * `USD` - USD
+                 *     * `USN` - USN
+                 *     * `USS` - USS
+                 *     * `UYI` - UYI
+                 *     * `UYP` - UYP
+                 *     * `UYU` - UYU
+                 *     * `UYW` - UYW
+                 *     * `UZS` - UZS
+                 *     * `VEB` - VEB
+                 *     * `VED` - VED
+                 *     * `VEF` - VEF
+                 *     * `VES` - VES
+                 *     * `VND` - VND
+                 *     * `VNN` - VNN
+                 *     * `VUV` - VUV
+                 *     * `WST` - WST
+                 *     * `XAF` - XAF
+                 *     * `XAG` - XAG
+                 *     * `XAU` - XAU
+                 *     * `XBA` - XBA
+                 *     * `XBB` - XBB
+                 *     * `XBC` - XBC
+                 *     * `XBD` - XBD
+                 *     * `XCD` - XCD
+                 *     * `XCG` - XCG
+                 *     * `XDR` - XDR
+                 *     * `XEU` - XEU
+                 *     * `XFO` - XFO
+                 *     * `XFU` - XFU
+                 *     * `XOF` - XOF
+                 *     * `XPD` - XPD
+                 *     * `XPF` - XPF
+                 *     * `XPT` - XPT
+                 *     * `XRE` - XRE
+                 *     * `XSU` - XSU
+                 *     * `XTS` - XTS
+                 *     * `XUA` - XUA
+                 *     * `XXX` - XXX
+                 *     * `YDD` - YDD
+                 *     * `YER` - YER
+                 *     * `YUD` - YUD
+                 *     * `YUM` - YUM
+                 *     * `YUN` - YUN
+                 *     * `YUR` - YUR
+                 *     * `ZAL` - ZAL
+                 *     * `ZAR` - ZAR
+                 *     * `ZMK` - ZMK
+                 *     * `ZMW` - ZMW
+                 *     * `ZRN` - ZRN
+                 *     * `ZRZ` - ZRZ
+                 *     * `ZWD` - ZWD
+                 *     * `ZWG` - ZWG
+                 *     * `ZWL` - ZWL
+                 *     * `ZWR` - ZWR
+                 */
+                currency?: "ADP" | "AED" | "AFA" | "AFN" | "ALK" | "ALL" | "AMD" | "ANG" | "AOA" | "AOK" | "AON" | "AOR" | "ARA" | "ARL" | "ARM" | "ARP" | "ARS" | "ATS" | "AUD" | "AWG" | "AZM" | "AZN" | "BAD" | "BAM" | "BAN" | "BBD" | "BDT" | "BEC" | "BEF" | "BEL" | "BGL" | "BGM" | "BGN" | "BGO" | "BHD" | "BIF" | "BMD" | "BND" | "BOB" | "BOL" | "BOP" | "BOV" | "BRB" | "BRC" | "BRE" | "BRL" | "BRN" | "BRR" | "BRZ" | "BSD" | "BTN" | "BUK" | "BWP" | "BYB" | "BYN" | "BYR" | "BZD" | "CAD" | "CDF" | "CHE" | "CHF" | "CHW" | "CLE" | "CLF" | "CLP" | "CNH" | "CNX" | "CNY" | "COP" | "COU" | "CRC" | "CSD" | "CSK" | "CUC" | "CUP" | "CVE" | "CYP" | "CZK" | "DDM" | "DEM" | "DJF" | "DKK" | "DOP" | "DZD" | "ECS" | "ECV" | "EEK" | "EGP" | "ERN" | "ESA" | "ESB" | "ESP" | "ETB" | "EUR" | "FIM" | "FJD" | "FKP" | "FRF" | "GBP" | "GEK" | "GEL" | "GHC" | "GHS" | "GIP" | "GMD" | "GNF" | "GNS" | "GQE" | "GRD" | "GTQ" | "GWE" | "GWP" | "GYD" | "HKD" | "HNL" | "HRD" | "HRK" | "HTG" | "HUF" | "IDR" | "IEP" | "ILP" | "ILR" | "ILS" | "INR" | "IQD" | "IRR" | "ISJ" | "ISK" | "ITL" | "JMD" | "JOD" | "JPY" | "KES" | "KGS" | "KHR" | "KMF" | "KPW" | "KRH" | "KRO" | "KRW" | "KWD" | "KYD" | "KZT" | "LAK" | "LBP" | "LKR" | "LRD" | "LSL" | "LTL" | "LTT" | "LUC" | "LUF" | "LUL" | "LVL" | "LVR" | "LYD" | "MAD" | "MAF" | "MCF" | "MDC" | "MDL" | "MGA" | "MGF" | "MKD" | "MKN" | "MLF" | "MMK" | "MNT" | "MOP" | "MRO" | "MRU" | "MTL" | "MTP" | "MUR" | "MVP" | "MVR" | "MWK" | "MXN" | "MXP" | "MXV" | "MYR" | "MZE" | "MZM" | "MZN" | "NAD" | "NGN" | "NIC" | "NIO" | "NLG" | "NOK" | "NPR" | "NZD" | "OMR" | "PAB" | "PEI" | "PEN" | "PES" | "PGK" | "PHP" | "PKR" | "PLN" | "PLZ" | "PTE" | "PYG" | "QAR" | "RHD" | "ROL" | "RON" | "RSD" | "RUB" | "RUR" | "RWF" | "SAR" | "SBD" | "SCR" | "SDD" | "SDG" | "SDP" | "SEK" | "SGD" | "SHP" | "SIT" | "SKK" | "SLE" | "SLL" | "SOS" | "SRD" | "SRG" | "SSP" | "STD" | "STN" | "SUR" | "SVC" | "SYP" | "SZL" | "THB" | "TJR" | "TJS" | "TMM" | "TMT" | "TND" | "TOP" | "TPE" | "TRL" | "TRY" | "TTD" | "TWD" | "TZS" | "UAH" | "UAK" | "UGS" | "UGX" | "USD" | "USN" | "USS" | "UYI" | "UYP" | "UYU" | "UYW" | "UZS" | "VEB" | "VED" | "VEF" | "VES" | "VND" | "VNN" | "VUV" | "WST" | "XAF" | "XAG" | "XAU" | "XBA" | "XBB" | "XBC" | "XBD" | "XCD" | "XCG" | "XDR" | "XEU" | "XFO" | "XFU" | "XOF" | "XPD" | "XPF" | "XPT" | "XRE" | "XSU" | "XTS" | "XUA" | "XXX" | "YDD" | "YER" | "YUD" | "YUM" | "YUN" | "YUR" | "ZAL" | "ZAR" | "ZMK" | "ZMW" | "ZRN" | "ZRZ" | "ZWD" | "ZWG" | "ZWL" | "ZWR" | null;
+                date?: string;
+                date__gt?: string;
+                date__gte?: string;
+                date__lt?: string;
+                date__lte?: string;
+                date__month?: number;
+                date__year?: number;
+                image_md5_hash?: string;
+                /**
+                 * @description * `COMMUNITY` - COMMUNITY
+                 *     * `CONSUMPTION` - CONSUMPTION
+                 */
+                kind?: "COMMUNITY" | "CONSUMPTION";
+                /**
+                 * @description * `OSM` - OSM
+                 *     * `ONLINE` - ONLINE
+                 */
+                location__type?: "ONLINE" | "OSM";
+                location_id?: number;
+                /** @description Multiple values may be separated by commas. */
+                location_id__in?: number[];
+                location_id__isnull?: boolean;
+                location_osm_id?: number;
+                /**
+                 * @description * `NODE` - NODE
+                 *     * `WAY` - WAY
+                 *     * `RELATION` - RELATION
+                 */
+                location_osm_type?: "NODE" | "RELATION" | "WAY" | null;
+                /** @description Which field to use when ordering the results. */
+                order_by?: string;
+                owner?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                prediction_count?: number;
+                prediction_count__gte?: number;
+                prediction_count__lte?: number;
+                price_count?: number;
+                price_count__gte?: number;
+                price_count__lte?: number;
+                ready_for_price_tag_validation?: boolean;
+                /** @description Number of results to return per page. */
+                size?: number;
+                tags__contains?: string;
+                tags__not_contains?: string;
+                /**
+                 * @description * `PRICE_TAG` - PRICE_TAG
+                 *     * `RECEIPT` - RECEIPT
+                 *     * `GDPR_REQUEST` - GDPR_REQUEST
+                 *     * `SHOP_IMPORT` - SHOP_IMPORT
+                 */
+                type?: ("GDPR_REQUEST" | "PRICE_TAG" | "RECEIPT" | "SHOP_IMPORT")[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedProofFullList"];
+                };
+            };
+        };
+    };
+    proofs_drafts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Proof. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofFull"];
+                };
+            };
+        };
+    };
+    proofs_drafts_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Proof. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    proofs_drafts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Proof. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedProofUpdate"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProofUpdate"];
+                "multipart/form-data": components["schemas"]["PatchedProofUpdate"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofFull"];
+                };
+            };
+        };
+    };
+    proofs_drafts_anonymize_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this Proof. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftProofAnonymizeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DraftProofAnonymizeRequest"];
+                "multipart/form-data": components["schemas"]["DraftProofAnonymizeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofFull"];
+                };
+            };
+        };
+    };
+    proofs_drafts_upload_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ProofDraftUpload"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofFull"];
                 };
             };
         };
@@ -5401,6 +6450,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["User"];
+                };
+            };
+        };
+    };
+    users_badges_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description A unique value identifying this User. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedUserBadgeList"];
                 };
             };
         };

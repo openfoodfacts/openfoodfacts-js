@@ -298,7 +298,6 @@ export class PricesApi {
 
   login(body: { username: string; password: string }) {
     return this.client.POST("/api/v1/auth", {
-      // @ts-expect-error - TODO: Wrong OpenAPI spec, there is no set_cookie query param
       params: { query: { set_cookie: 1 } },
       body,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },

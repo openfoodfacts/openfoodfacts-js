@@ -743,16 +743,6 @@ export interface components {
             [key: string]: string;
         };
         /**
-         * Canonicalized taxonomy tag entry
-         * @description A tag entry, that has been matched against a taxonomy (e.g. a category, a label)
-         *
-         *     The entry is a string that can contain either:
-         *
-         *     - a taxonomy entry id, in the form [2 letter language code]:[normalized canonical name] (e.g. "en:green-teas") -> for entries that could be matched to a taxonomy entry
-         *     - a string in a specific language, prefixed by the 2 letter language code (e.g. "fr:Thés verts") -> for entries that could not be matched to a taxonomy entry
-         */
-        taxonomy_tag_entry: string;
-        /**
          * Indexed taxonomy tag entry (lossy, for search only)
          * @description This field is used for search only. It is a lossy representation of the taxonomy tag entry, that can be used to index the entry in a search engine.
          *     A tag entry, that has been matched against a taxonomy (e.g. a category, a label)
@@ -764,24 +754,13 @@ export interface components {
          *     (e.g. "fr:thes-verts") -> for entries that could not be matched to a taxonomy entry
          */
         indexed_taxonomy_tag_entry: string;
-        /** @description Data about a product which is represented as tags */
-        product_tags: {
+        /** Product Base Tags */
+        product_base_tags: {
             /**
              * @description Comma separated list of brands (not taxonomized), in the last language used to edit it (recorded in brands_lc)
              *     This field is mostly used for debugging and testing purposes. Do not use it for display purposes.
              */
             brands?: string;
-            /**
-             * @description An array of brands tag entries (for display and editing).
-             *
-             *     That is the id of brands found in taxonomy +
-             *     brands not found in taxonomy (as-is, with no normalization).
-             *
-             *     This is the field that should be used for display purposes, as it is not lossy.
-             */
-            brands_hierarchy?: components["schemas"]["taxonomy_tag_entry"][];
-            /** @description Language code of the last edit for brands */
-            brands_lc?: string;
             /**
              * @description An array of indexed brands tag entries (for search).
              *
@@ -797,17 +776,6 @@ export interface components {
              */
             categories?: string;
             /**
-             * @description An array of categories tag entries (for display and editing).
-             *
-             *     That is the id of categories found in taxonomy +
-             *     categories not found in taxonomy (as-is, with no normalization).
-             *
-             *     This is the field that should be used for display purposes, as it is not lossy.
-             */
-            categories_hierarchy?: components["schemas"]["taxonomy_tag_entry"][];
-            /** @description Language code of the last edit for categories */
-            categories_lc?: string;
-            /**
              * @description An array of indexed categories tag entries (for search).
              *
              *     That is the id of categories found in taxonomy +
@@ -822,9 +790,6 @@ export interface components {
             correctors_tags?: string[];
             /** @description List of countries where the product is sold. */
             countries?: string;
-            countries_hierarchy?: string[];
-            /** @description Countries language code */
-            countries_lc?: string;
             countries_tags?: string[];
             /**
              * @description All ecoscore of a product.
@@ -838,11 +803,8 @@ export interface components {
              * @example EMB 2013330
              */
             emb_codes?: string;
-            emb_codes_orig?: string;
             emb_codes_tags?: Record<string, unknown>[];
             labels?: string;
-            labels_hierarchy?: string[];
-            labels_lc?: string;
             labels_tags?: string[];
             /**
              * @description The data as a series of tag: `yyyy-mm-dd`, `yyyy-mm`, `yyyy`
@@ -858,6 +820,60 @@ export interface components {
             manufacturing_places_tags?: string[];
             nova_groups_tags?: string[];
             nutrient_levels_tags?: string[];
+        };
+        /** Product Tags */
+        ProductTagsV3: components["schemas"]["product_base_tags"] & {
+            /**
+             * @description All the relevant data on the sources of the different tags of the product.
+             *     The data is sorted by the sources from which the tags are obtained, e.g. packaging, producer, predicted.
+             *     The current sources are:
+             *       - packaging: what is written on the packaging of the product
+             *       - manufacturer: information that was sent directly from the manufacturer to Open Food Facts, through our producers platform
+             *       - ingredients: information that is derived from the ingredients list (e.g. allergens and traces)
+             *       - database-* (e.g. database-usda): information from another open database
+             *       - label-* (e.g. label-non-gmo-project): information from a label organization (e.g. some labels send us lists of products that have the label)
+             *     New sources may be added at anytime, so we are using patternProperties to make sure parsing does not break if a new source is encountered.
+             * @example {
+             *       "packaging": {
+             *         "categories": {
+             *           "last_updated_t": "2026-02-22T10:00:00Z",
+             *           "tags": [
+             *             "en:organic",
+             *             "en:vegetarian"
+             *           ]
+             *         },
+             *         "labels": {
+             *           "last_updated_t": "2026-02-22T10:00:00Z",
+             *           "tags": [
+             *             "en:fair-trade"
+             *           ]
+             *         }
+             *       },
+             *       "manufacturer": {
+             *         "categories": {
+             *           "last_updated_t": "2026-02-22T10:00:00Z",
+             *           "tags": [
+             *             "en:organic"
+             *           ]
+             *         }
+             *       }
+             *     }
+             */
+            tags_sources?: {
+                [key: string]: {
+                    [key: string]: {
+                        /** @description Timestamp indicating when tags related to this source were last updated. */
+                        last_updated_t?: string;
+                        /**
+                         * @description The specific tags related to this source.
+                         * @example [
+                         *       "en:organic"
+                         *     ]
+                         */
+                        tags?: string[];
+                    };
+                };
+            };
         };
         /**
          * Image Size
@@ -1194,16 +1210,14 @@ export interface components {
             environment_impact_level?: string;
             environment_impact_level_tags?: Record<string, unknown>[];
         };
-        /**
-         * ingredients
-         * @description This structure gives the different ingredients and some information about them,
-         *     like estimate on their quantity.
-         */
-        Ingredients: components["schemas"]["Ingredient"][];
         /** ingredient */
-        Ingredient: {
+        ingredient: {
             id?: string;
-            ingredients?: components["schemas"]["Ingredients"];
+            /**
+             * @description This structure gives the different ingredients and some information about them,
+             *     like estimate on their quantity.
+             */
+            ingredients?: components["schemas"]["ingredient"][];
             /** @description The percentage of the ingredient. */
             percent?: number;
             /** @description Estimated percentage of the ingredient. */
@@ -1231,7 +1245,11 @@ export interface components {
             allergens_lc?: string;
             allergens_hierarchy?: string[];
             allergens_tags?: string[];
-            ingredients?: components["schemas"]["Ingredients"];
+            /**
+             * @description This structure gives the different ingredients and some information about them,
+             *     like estimate on their quantity.
+             */
+            ingredients?: components["schemas"]["ingredient"][];
             ingredients_analysis?: {
                 "en:palm-oil"?: string[];
                 "en:vegan-status-unknown"?: string[];
@@ -1333,6 +1351,14 @@ export interface components {
              * @example 4.1
              */
             value?: number;
+            /**
+             * @description A normalized float value for the quantity, computed by the system (not entered by a user or manufacturer).
+             *     This is used only for values that are computed from other nutrient values, like energy computed from fat, carbohydrates and proteins.
+             *     And salt or sodium computed from each other.
+             * @example 150
+             * @example 250.5
+             */
+            value_computed?: number;
             /**
              * @description The unit of the value entered by the contributor (a user or the manufacturer), for the product.
              *     In most cases, this unit is the unit displayed on the product for the nutrient, but it is not guaranteed, as some apps may force specific units when writing nutrient values.
@@ -1440,13 +1466,13 @@ export interface components {
                  *
                  *     (per 100g or per serving) in a standard unit (g or ml)
                  */
-                energy_kcal?: components["schemas"]["nutrient_values_v3_base"] & components["schemas"]["nutrients_source_v3"];
+                "energy-kcal"?: components["schemas"]["nutrient_values_v3_base"] & components["schemas"]["nutrients_source_v3"];
                 /**
                  * @description energy in kj, if it is specified
                  *
                  *     (per 100g or per serving) in a standard unit (g or ml)
                  */
-                energy_kj?: components["schemas"]["nutrient_values_v3_base"] & components["schemas"]["nutrients_source_v3"];
+                "energy-kj"?: components["schemas"]["nutrient_values_v3_base"] & components["schemas"]["nutrients_source_v3"];
                 fat?: components["schemas"]["nutrient_values_v3_base"] & components["schemas"]["nutrients_source_v3"];
                 "saturated-fat"?: components["schemas"]["nutrient_values_v3_base"] & components["schemas"]["nutrients_source_v3"];
                 "trans-fat"?: components["schemas"]["nutrient_values_v3_base"] & components["schemas"]["nutrients_source_v3"];
@@ -1518,13 +1544,13 @@ export interface components {
                  *
                  *     (per 100g or per serving) in a standard unit (g or ml)
                  */
-                energy_kcal?: components["schemas"]["nutrient_values_v3_with_value_string"];
+                "energy-kcal"?: components["schemas"]["nutrient_values_v3_with_value_string"];
                 /**
                  * @description energy in kj, if it is specified
                  *
                  *     (per 100g or per serving) in a standard unit (g or ml)
                  */
-                energy_kj?: components["schemas"]["nutrient_values_v3_with_value_string"];
+                "energy-kj"?: components["schemas"]["nutrient_values_v3_with_value_string"];
                 fat?: components["schemas"]["nutrient_values_v3_with_value_string"];
                 "saturated-fat"?: components["schemas"]["nutrient_values_v3_with_value_string"];
                 "trans-fat"?: components["schemas"]["nutrient_values_v3_with_value_string"];
@@ -1945,6 +1971,162 @@ export interface components {
              */
             misc_tags?: string[];
         };
+        /** @description Forest footprint details for cocoa, coffee, or palm oil primary ingredients. */
+        ForestFootprintPrimaryIngredient: {
+            /** @description Total footprint per kilogram for this primary ingredient. */
+            footprint_per_kg: number;
+            /**
+             * @description Grade for this primary ingredient (A is best, D is worst).
+             * @enum {string}
+             */
+            grade: "a" | "b" | "c" | "d";
+            ingredients: {
+                /** @description Ingredient equivalence factor. */
+                equivalence_ingredient: number;
+                /** @description Ingredient category equivalence factor. */
+                equivalence_ingredient_category: number;
+                /** @description Footprint per kg for this ingredient. */
+                footprint_per_kg: number;
+                /** @description The ingredient category tag (e.g. en:cocoa, en:coffee, en:palm-oil). */
+                ingredient_category_id: string;
+                /** @description The ingredient tag (canonical ID from the ingredients taxonomy). */
+                ingredient_id: string;
+                /** @description Label that reduces deforestation risk (if applicable). */
+                label_id?: string;
+                /** @description Footprint per kg for the origin of this ingredient. */
+                origin_footprint: number;
+                /** @description Origin tag (e.g. en:brazil, en:unknown). */
+                origin_id: string;
+                /** @description Percentage of this ingredient in the product. */
+                percent: number;
+                /** @description The primary ingredient this ingredient maps to. */
+                primary_ingredient_id: string;
+                /** @description Risk reduction factor applied by labels (1 = no reduction). */
+                risk_factor: number;
+                /** @description Combined equivalence/ingredient and category equivalence factors. */
+                transformation_factor: number;
+            }[];
+        };
+        /**
+         * @description Forest footprint details for chicken and eggs, computed using the
+         *     legacy ForestFootprint algorithm (soy-based feed import risk).
+         *     This has a different data structure than the other primary ingredients.
+         */
+        ForestFootprintChickenAndEggs: {
+            /** @description Total footprint per kg for chicken and eggs. */
+            footprint_per_kg: number;
+            /**
+             * @description Grade for chicken and eggs (A is best, E is worst). Uses legacy thresholds.
+             * @enum {string}
+             */
+            grade: "a" | "b" | "c" | "d" | "e";
+            ingredients: {
+                /** @description Conditions tags (e.g. processing conditions). */
+                conditions_tags: string[];
+                /** @description Footprint per kg for this ingredient entry. */
+                footprint_per_kg: number;
+                /** @description Percentage of this ingredient in the product. */
+                percent: number;
+                /** @description Processing factor applied. */
+                processing_factor: number;
+                /** @description The tag id (ingredient or category tag). */
+                tag_id: string;
+                /** @description The type of tag (e.g. "ingredients", "categories"). */
+                tag_type: string;
+                type: {
+                    /** @description Deforestation risk factor for this chicken/egg type. */
+                    deforestation_risk: number;
+                    /** @description Human-readable name of the chicken/egg type. */
+                    name: string;
+                    /** @description Soy feed factor. */
+                    soy_feed_factor: number;
+                    /** @description Soy yield factor. */
+                    soy_yield: number;
+                };
+            }[] | null;
+        };
+        /**
+         * @description Risky ingredients (corn, rice, cassava, soya, meat, dairy) that are
+         *     not yet assessed for deforestation risk. The footprint and grade are
+         *     unknown; only the ingredient list is provided.
+         */
+        ForestFootprintOtherRiskyIngredients: {
+            /** @description Always null, as risky ingredients are not yet assessed. */
+            footprint_per_kg: null;
+            /**
+             * @description Always "unknown".
+             * @enum {string}
+             */
+            grade: "unknown";
+            ingredients: {
+                /** @description The risky ingredient category tag (e.g. en:rice, en:cassava). */
+                ingredient_category_id: string;
+                /** @description The ingredient tag (canonical ID from the ingredients taxonomy). */
+                ingredient_id: string;
+            }[] | null;
+        };
+        /**
+         * ForestFootprint2026
+         * @description Forest footprint (2026 algorithm) of a product — the risk of deforestation
+         *     associated with its ingredients.
+         *
+         *     This is a computed field; it is not settable by API users. It is present on
+         *     the product only when the forest footprint computation has been run.
+         *
+         *     The `primary_ingredients` object uses ingredient tags (e.g. `en:cocoa`,
+         *     `en:coffee`, `en:palm-oil`, `en:chicken-and-eggs`, `en:other-risky-ingredients`)
+         *     as keys. Only keys relevant to the product are present.
+         */
+        forest_footprint_2026: {
+            /**
+             * @description Overall forest footprint grade of the product.
+             *
+             *     - `a`: No deforestation risk (absence of risky ingredients or zero impact)
+             *     - `b`: Low risk of deforestation
+             *     - `c`: Medium risk of deforestation
+             *     - `d`: High risk of deforestation
+             *     - `unknown`: The product has ingredients that are not yet assessed
+             *       (e.g. corn, rice, cassava, soya, meat, dairy) without any computed
+             *       primary ingredients
+             *     - `not_computed`: The product contains risky ingredients but the overall
+             *       grade could not be computed
+             * @enum {string}
+             */
+            grade?: "a" | "b" | "c" | "d" | "unknown" | "not_computed";
+            /**
+             * @description Summary of the forest footprint computation status:
+             *
+             *     - `missing_ingredients`: The product has no ingredients list, so the
+             *       forest footprint could not be computed
+             *     - `with_other_risky_ingredients`: The product contains risky ingredients
+             *       (not yet assessed) but no computed primary ingredients
+             *     - `without_primary_ingredients_or_other_risky_ingredients`: The product
+             *       has ingredients but none are risky or assessed; grade is A
+             *     - `with_primary_ingredients`: The product has computed primary ingredients
+             *       (cocoa, coffee, palm oil, chicken/eggs)
+             * @enum {string}
+             */
+            summary?: "missing_ingredients" | "with_other_risky_ingredients" | "without_primary_ingredients_or_other_risky_ingredients" | "with_primary_ingredients";
+            /**
+             * @description Total forest footprint per kilogram of food, in square meters per kg.
+             *
+             *     This field is present (as a number) when the summary is
+             *     `with_primary_ingredients` or `without_primary_ingredients_or_other_risky_ingredients`.
+             *     It is `null` when the summary is `missing_ingredients` or
+             *     `with_other_risky_ingredients`. It may be absent if the field was not
+             *     populated.
+             */
+            total_footprint_per_kg?: number | null;
+            /**
+             * @description Map of primary ingredients and their computed forest footprint details.
+             *     Keys are primary ingredient tags (`en:cocoa`, `en:coffee`,
+             *     `en:palm-oil`, `en:chicken-and-eggs`, `en:other-risky-ingredients`).
+             *     Only primary ingredients present in the product are included.
+             */
+            primary_ingredients?: {
+                [key: string]: components["schemas"]["ForestFootprintPrimaryIngredient"] | components["schemas"]["ForestFootprintChickenAndEggs"] | components["schemas"]["ForestFootprintOtherRiskyIngredients"];
+            };
+        };
         /** product_extended */
         product_extended: {
             additives_original_tags?: string[];
@@ -1971,6 +2153,15 @@ export interface components {
              *     **TODO** explain how it is chosen.
              */
             compared_to_category?: string;
+            /**
+             * @description Forest footprint (2026 algorithm) of a product — the risk of deforestation
+             *     associated with its ingredients. This is a computed field.
+             *
+             *     See also `forest_footprint_2026.grade`, `forest_footprint_2026.summary`,
+             *     `forest_footprint_2026.total_footprint_per_kg`, and
+             *     `forest_footprint_2026.primary_ingredients`.
+             */
+            forest_footprint_2026?: components["schemas"]["forest_footprint_2026"];
             conservation_conditions?: string;
             /** @description Contact info of customer service. */
             customer_service?: string;
@@ -2247,6 +2438,8 @@ export interface components {
                 values?: {
                     /** @description Cell text content */
                     text?: string;
+                    /** @description Optional URL that the cell text links to (e.g. a revision of the product, or a contributor page) */
+                    url?: string;
                     /** @description URL of an icon to display in the cell */
                     icon_url?: string;
                     /** @description Percentage value for progress bars (used with percent columns) */
@@ -2397,14 +2590,14 @@ export interface components {
          *     * [Product Images 2](#cmp--schemas-product-images2): Information about Images of a product
          *     * [Product Eco-Score](#cmp--schemas-product-ecoscore): Fields related to Eco-Score for a product
          *     * [Product Ingredients](#cmp--schemas-product-ingredients): Fields about ingredients of a product
-         *     * [Product Nutrition](#cmp--schemas-product-nutrition): Nutrition fields of a product
+         *     * [Product Nutrition v3.5](#cmp--schemas-product-nutrition-v3-5): Nutrition fields of a product (v3.5)
          *     * [Product Data Quality](#cmp--schemas-product-quality): fields related to data quality for a product
          *     * [Product Extended](#cmp--schemas-product-extended): TODO
          *     * [Product Metadata](#cmp--schemas-product-meta): Metadata of a product (author, editors, etc.)
          *     * [Product Knowledge Panels](#cmp--schemas-product-knowledge-panels): Knowledge panels for a product
          *     * [Product Attribute Groups](#cmp--schemas-product-attribute-groups): Attribute groups for personal product matching
          */
-        product_v3: components["schemas"]["product_base"] & components["schemas"]["product_misc"] & components["schemas"]["product_tags"] & components["schemas"]["ProductImagesV3"] & components["schemas"]["product_ecoscore"] & components["schemas"]["product_ingredients"] & components["schemas"]["ProductNutritionDataV3"] & components["schemas"]["NutriscoreAll"] & components["schemas"]["product_quality"] & components["schemas"]["product_extended"] & components["schemas"]["product_meta"] & components["schemas"]["product_knowledge_panels"] & components["schemas"]["product_attribute_groups"];
+        product_v3: components["schemas"]["product_base"] & components["schemas"]["product_misc"] & components["schemas"]["ProductTagsV3"] & components["schemas"]["ProductImagesV3"] & components["schemas"]["product_ecoscore"] & components["schemas"]["product_ingredients"] & components["schemas"]["ProductNutritionDataV3"] & components["schemas"]["NutriscoreAll"] & components["schemas"]["product_quality"] & components["schemas"]["product_extended"] & components["schemas"]["product_meta"] & components["schemas"]["product_knowledge_panels"] & components["schemas"]["product_attribute_groups"];
         /**
          * Language and country of the user
          * @example {
@@ -2755,6 +2948,8 @@ export interface components {
         ActivateKnowledgePanelsSimplified: boolean;
         /** @description If true, knowledge panels will include the physical activities panel */
         ActivateKnowledgePanelPhysicalActivities: boolean;
+        /** @description If true, and if the user is logged in, knowledge panels will include the product_history panel (a table of the changes history of the product, in the contribution card) */
+        ActivateKnowledgePanelProductHistory: boolean;
         /** @description When knowledge_panels are requested, you can specify which panels should be in the response. All the others will be excluded. */
         KnowledgePanelsIncluded: string;
         /**
@@ -2809,6 +3004,8 @@ export interface operations {
                 activate_knowledge_panels_simplified?: components["parameters"]["ActivateKnowledgePanelsSimplified"];
                 /** @description If true, knowledge panels will include the physical activities panel */
                 activate_knowledge_panel_physical_activities?: components["parameters"]["ActivateKnowledgePanelPhysicalActivities"];
+                /** @description If true, and if the user is logged in, knowledge panels will include the product_history panel (a table of the changes history of the product, in the contribution card) */
+                activate_knowledge_panel_product_history?: components["parameters"]["ActivateKnowledgePanelProductHistory"];
                 /** @description When knowledge_panels are requested, you can specify which panels should be in the response. All the others will be excluded. */
                 knowledge_panels_included?: components["parameters"]["KnowledgePanelsIncluded"];
                 /**
@@ -2859,7 +3056,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description The barcode of the product to to create or update, or "test" to analyze the product data sent without creating or updating a product. */
+                /** @description The barcode of the product to create or update, or "test" to analyze the product data sent without creating or updating a product. */
                 code: string;
             };
             cookie?: never;
