@@ -5,6 +5,7 @@ export * from "./prices.js";
 export * from "./nutripatrol.js";
 export * from "./search.js";
 export * from "./query.js";
+export * from "./facets-kp.js";
 export * from "./off.js";
 export type * from "./types.js";
 export type * from "./knowledgepanels.js";
