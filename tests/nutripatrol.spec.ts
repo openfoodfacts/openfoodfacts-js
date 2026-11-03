@@ -166,6 +166,16 @@ describe("NutriPatrol Wrapper", () => {
       expect(data).toEqual(mockData);
     });
 
+    it("should fetch tickets without query parameter", async () => {
+      const mockData = { tickets: [{ id: 1, status: "open" }] };
+      fetchMock.mockResolvedValue(mockResponse(mockData));
+
+      const { data, error } = await client.getTickets();
+
+      expect(error).toBeUndefined();
+      expect(data).toEqual(mockData);
+    });
+
     it("should fetch tickets filtered by barcode", async () => {
       const mockData = {
         tickets: [{ id: 1, status: "open", barcode: "3017620422003" }],

@@ -105,14 +105,16 @@ export class NutriPatrol {
    *   page_size: 20,
    * });
    */
-  getTickets(query: {
-    barcode?: string;
-    status?: components["schemas"]["TicketStatus"];
-    type?: components["schemas"]["IssueType"];
-    reason?: components["schemas"]["ReasonType"][];
-    page?: number;
-    page_size?: number;
-  }) {
+  getTickets(
+    query: {
+      barcode?: string;
+      status?: components["schemas"]["TicketStatus"];
+      type?: components["schemas"]["IssueType"];
+      reason?: components["schemas"]["ReasonType"][];
+      page?: number;
+      page_size?: number;
+    } = {},
+  ) {
     const { type, ...rest } = query;
     return this.client.GET("/api/v1/tickets", {
       params: {
