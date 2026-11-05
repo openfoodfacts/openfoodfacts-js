@@ -1,12 +1,5 @@
 type FormBodyValue =
-  | string
-  | boolean
-  | number
-  | bigint
-  | symbol
-  | object
-  | undefined
-  | null;
+  string | boolean | number | bigint | symbol | object | undefined | null;
 
 export function formBody(params: Record<string, FormBodyValue>) {
   const formBody = new URLSearchParams();
