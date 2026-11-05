@@ -27,6 +27,9 @@ export type QuestionsResponse = {
   status?: "found" | "no_questions";
   questions?: Question[];
 };
+
+/** Project selected by Robotoff through the `server_type` query parameter. */
+export type RobotoffServerType = "off" | "obf" | "opff" | "opf";
 export type LogoSearchParams =
   paths["/images/logos/search"]["get"]["parameters"]["query"];
 
@@ -51,10 +54,13 @@ export class Robotoff {
 
   constructor(
     fetch: FetchFn,
-    options: { baseUrl: string } = { baseUrl: DEFAULT_ROBOTOFF_API_URL },
+    options: { baseUrl?: string; serverType?: RobotoffServerType } = {},
   ) {
     this.fetch = fetch;
-    this.baseUrl = new URL("/api/v1", options.baseUrl).toString();
+    this.baseUrl = new URL(
+      "/api/v1",
+      options.baseUrl ?? DEFAULT_ROBOTOFF_API_URL,
+    ).toString();
     this.raw = createClient<paths>({
       fetch: this.fetch,
       baseUrl: this.baseUrl,
@@ -62,6 +68,19 @@ export class Robotoff {
         "User-Agent": USER_AGENT,
       },
     });
+
+    if (options.serverType != null) {
+      const serverType = options.serverType;
+      this.raw.use({
+        onRequest({ request }) {
+          const url = new URL(request.url);
+          if (!url.searchParams.has("server_type")) {
+            url.searchParams.set("server_type", serverType);
+          }
+          return new Request(url, request);
+        },
+      });
+    }
   }
 
   async annotate(body: RobotoffAnnotateBody) {

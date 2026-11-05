@@ -1,4 +1,5 @@
 export type * from "./taxonomy/types.js";
+export { BackendType, getProductImageBaseUrl } from "./consts.js";
 export * from "./robotoff.js";
 export * from "./folksonomy.js";
 export * from "./prices.js";
