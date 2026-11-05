@@ -101,17 +101,27 @@ export class PricesApi {
 
   constructor(
     fetch: FetchFn,
-    options: { baseUrl: string; authToken?: string } = { baseUrl: BASE_URL },
+    options: { baseUrl: string; authToken?: string | null } = {
+      baseUrl: BASE_URL,
+    },
   ) {
+    if (options?.authToken === null) {
+      throw new Error("authToken cannot be null");
+    }
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+    };
+    if (options?.authToken) {
+      headers["Authorization"] = `Bearer ${options.authToken}`;
+    }
+
     this.client = createClient({
       fetch,
       baseUrl: options.baseUrl,
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${options?.authToken}`,
-        "User-Agent": USER_AGENT,
-      },
+      headers,
     });
   }
 

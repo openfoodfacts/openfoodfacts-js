@@ -24,20 +24,28 @@ export class Folksonomy {
 
   constructor(
     fetch: FetchFn,
-    options?: { baseUrl?: string; authToken?: string },
+    options?: { baseUrl?: string; authToken?: string | null },
   ) {
     this.baseUrl = options?.baseUrl ?? DEFAULT_FOLKSONOMY_API_URL;
     this.authToken = options?.authToken;
+
+    if (options?.authToken === null) {
+      throw new Error("authToken cannot be null");
+    }
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+    };
+    if (this.authToken) {
+      headers["Authorization"] = `Bearer ${this.authToken}`;
+    }
 
     this.fetch = fetch;
     this.client = createClient({
       baseUrl: this.baseUrl,
       fetch,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.authToken}`,
-        "User-Agent": USER_AGENT,
-      },
+      headers,
     });
   }
 
