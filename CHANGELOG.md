@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0-alpha.36](https://github.com/openfoodfacts/openfoodfacts-js/compare/v2.0.0-alpha.36...v2.1.0-alpha.36) (2026-11-05)
+
+
+### Features
+
+* **taxonomy:** add getTaxoEntries with language, relatives and fields options ([aa49369](https://github.com/openfoodfacts/openfoodfacts-js/commit/aa4936978973d70379461b7c03aaf7fb55130d20))
+
+
+### Bug Fixes
+
+* **nutripatrol:** support optional query parameter in getTickets ([983ec7e](https://github.com/openfoodfacts/openfoodfacts-js/commit/983ec7e76dafe95baa7259f29b4f50c1f5f26b4c))
+
 ## [2.0.0-alpha.36](https://github.com/openfoodfacts/openfoodfacts-js/compare/v2.0.0-alpha.35...v2.0.0-alpha.36) (2026-10-27)
 
 
