@@ -1,7 +1,7 @@
 import openapiFetchCreateClient from "openapi-fetch";
 import { unwrapCjsDefault } from "./interop-workaround.js";
 
-import type { operations, paths } from "./schemas/robotoff.js";
+import type { components, operations, paths } from "./schemas/robotoff.js";
 import { DEFAULT_ROBOTOFF_API_URL, USER_AGENT } from "./consts.js";
 import { formBody } from "./formbody.js";
 import type { FetchFn } from "./types.js";
@@ -27,6 +27,8 @@ export type QuestionsResponse = {
   status?: "found" | "no_questions";
   questions?: Question[];
 };
+export type LogoDetails = components["schemas"]["LogoDetails"];
+
 export type LogoSearchParams =
   paths["/images/logos/search"]["get"]["parameters"]["query"];
 
@@ -98,12 +100,15 @@ export class Robotoff {
     return this.raw.GET("/insights", { params: { query } });
   }
 
-  // TODO: replace any with proper type
-  // ATM not specifying the type makes tsc fail sometimes
-  async loadLogo(logoId: string): Promise<any> {
-    // @ts-expect-error TODO: still not documented
-    const result = await this.raw.GET("/images/logos/{logoId}", {
-      params: { path: { logoId } },
+  /**
+   * Get details about a specific logo.
+   *
+   * @param logoId The ID of the logo.
+   * @returns A promise that resolves to the logo details.
+   */
+  async loadLogo(logoId: number | string): Promise<LogoDetails | undefined> {
+    const result = await this.raw.GET("/images/logos/{logo_id}", {
+      params: { path: { logo_id: Number(logoId) } },
     });
     return result.data;
   }
