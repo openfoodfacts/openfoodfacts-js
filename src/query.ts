@@ -63,8 +63,8 @@ export class QueryApi {
       { $match: options.filter ?? {} },
       { $group: { _id: `$${facet}` } },
     ];
-    if (options.limit !== undefined) stages.push({ $limit: options.limit });
     if (options.skip !== undefined) stages.push({ $skip: options.skip });
+    if (options.limit !== undefined) stages.push({ $limit: options.limit });
 
     return (await this.postAggregate(stages, options)) as QueryFacetValue[];
   }
