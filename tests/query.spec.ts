@@ -31,6 +31,66 @@ describe("Query API", () => {
     });
 
     expect(result).toEqual(data);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://query.example/aggregate?obsolete=true&product_type=food",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify([
+          {
+            $match: {
+              countries_tags: "en:france",
+              nutriscore_score: { $gte: 3 },
+            },
+          },
+          { $group: { _id: "$brands_tags" } },
+          { $skip: 20 },
+          { $limit: 10 },
+        ]),
+      }),
+    );
+  });
+
+  it("sends find queries with projection, sort and pagination", async () => {
+    const products = [{ code: "123", product_name: "Example" }];
+    fetchMock.mockResolvedValue(TestUtils.mockResponse(products));
+    const query = {
+      filter: { countries_tags: "en:france" },
+      projection: { code: true, product_name: true },
+      sort: [["last_modified_t", -1]] as ["last_modified_t", -1][],
+      skip: 20,
+      limit: 10,
+    };
+    expect(
+      await client.find(query, { obsolete: false, productType: "food" }),
+    ).toEqual(products);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://query.example/find?obsolete=false&product_type=food",
+      expect.objectContaining({ method: "POST", body: JSON.stringify(query) }),
+    );
+  });
+
+  it("sends aggregate pipelines and returns count results", async () => {
+    const stages = [
+      { $match: {} },
+      { $group: { _id: "$brands_tags" as const } },
+      { $count: 1 },
+    ];
+    fetchMock.mockResolvedValue(TestUtils.mockResponse({ brands_tags: 17 }));
+    expect(await client.aggregate(stages)).toEqual({ brands_tags: 17 });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://query.example/aggregate",
+      expect.objectContaining({ method: "POST", body: JSON.stringify(stages) }),
+    );
+  });
+
+  it("counts products matching a filter", async () => {
+    const filter = { countries_tags: "en:france" };
+    fetchMock.mockResolvedValue(TestUtils.mockResponse(42));
+    expect(await client.count(filter, { productType: "beauty" })).toBe(42);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://query.example/count?product_type=beauty",
+      expect.objectContaining({ method: "POST", body: JSON.stringify(filter) }),
+    );
   });
 
   it("returns the distinct facet count from the mocked API response", async () => {

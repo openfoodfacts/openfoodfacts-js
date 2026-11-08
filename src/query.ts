@@ -4,10 +4,13 @@ import type { FetchFn } from "./types.js";
 
 type StripGroupPrefix<T> = T extends `$${infer Field}` ? Field : never;
 type AggregateOperation = operations["aggregate_aggregate_post"];
-type AggregateStage =
+export type QueryAggregateStage =
   AggregateOperation["requestBody"]["content"]["application/json"][number];
-type AggregateResponse =
+export type QueryAggregateResponse =
   AggregateOperation["responses"]["200"]["content"]["application/json"];
+export type QueryFindRequest = components["schemas"]["FindQuery"];
+export type QueryFindResponse =
+  operations["find_find_post"]["responses"]["200"]["content"]["application/json"];
 type AggregateQuery = AggregateOperation["parameters"]["query"];
 
 /** Fields accepted by openfoodfacts-query's `$group: { _id: "$field" }`. */
@@ -24,17 +27,20 @@ export type QueryFacetValue = Required<
   components["schemas"]["AggregateResult"]
 >;
 
-export type QueryFacetOptions = {
-  filter?: QueryFilter;
-  limit?: number;
-  skip?: number;
+export type QueryOptions = {
   obsolete?: boolean;
   productType?: QueryProductType;
 };
 
+export type QueryFacetOptions = QueryOptions & {
+  filter?: QueryFilter;
+  limit?: number;
+  skip?: number;
+};
+
 const DEFAULT_QUERY_URL = "https://query.openfoodfacts.org";
 
-/** Client for the supported facet queries on the Open Food Facts query service. */
+/** Client for the Open Food Facts query service. */
 export class QueryApi {
   private readonly fetch: FetchFn;
   private readonly baseUrl: string;
@@ -42,6 +48,30 @@ export class QueryApi {
   constructor(fetch: FetchFn, options: { baseUrl?: string } = {}) {
     this.fetch = fetch;
     this.baseUrl = (options.baseUrl ?? DEFAULT_QUERY_URL).replace(/\/$/, "");
+  }
+
+  /** Find product documents using a filter, projection, sort and pagination. */
+  async find(
+    query: QueryFindRequest,
+    options: QueryOptions = {},
+  ): Promise<QueryFindResponse> {
+    return this.post("find", query, options);
+  }
+
+  /** Count products matching a filter. */
+  async count(
+    filter: QueryFilter,
+    options: QueryOptions = {},
+  ): Promise<number> {
+    return this.post("count", filter, options);
+  }
+
+  /** Run an aggregation pipeline supported by the query service. */
+  async aggregate(
+    stages: QueryAggregateStage[],
+    options: QueryOptions = {},
+  ): Promise<QueryAggregateResponse> {
+    return this.post("aggregate", stages, options);
   }
 
   /**
@@ -59,14 +89,14 @@ export class QueryApi {
     options: QueryFacetOptions = {},
   ): Promise<QueryFacetValue[]> {
     this.validatePagination(options);
-    const stages: AggregateStage[] = [
+    const stages: QueryAggregateStage[] = [
       { $match: options.filter ?? {} },
       { $group: { _id: `$${facet}` } },
     ];
-    if (options.limit !== undefined) stages.push({ $limit: options.limit });
     if (options.skip !== undefined) stages.push({ $skip: options.skip });
+    if (options.limit !== undefined) stages.push({ $limit: options.limit });
 
-    return (await this.postAggregate(stages, options)) as QueryFacetValue[];
+    return (await this.aggregate(stages, options)) as QueryFacetValue[];
   }
 
   /**
@@ -79,7 +109,7 @@ export class QueryApi {
       "filter" | "obsolete" | "productType"
     > = {},
   ): Promise<number> {
-    const result = (await this.postAggregate(
+    const result = (await this.aggregate(
       [
         { $match: options.filter ?? {} },
         { $group: { _id: `$${facet}` } },
@@ -90,10 +120,11 @@ export class QueryApi {
     return result[facet];
   }
 
-  private async postAggregate(
-    stages: AggregateStage[],
-    options: Pick<QueryFacetOptions, "obsolete" | "productType">,
-  ): Promise<AggregateResponse> {
+  private async post<T>(
+    endpoint: "find" | "count" | "aggregate",
+    body: QueryFindRequest | QueryFilter | QueryAggregateStage[],
+    options: QueryOptions,
+  ): Promise<T> {
     const params = new URLSearchParams();
     if (options.obsolete !== undefined) {
       params.set("obsolete", String(options.obsolete));
@@ -103,19 +134,19 @@ export class QueryApi {
     }
     const queryString = params.toString();
     const query = queryString ? `?${queryString}` : "";
-    const response = await this.fetch(`${this.baseUrl}/aggregate${query}`, {
+    const response = await this.fetch(`${this.baseUrl}/${endpoint}${query}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "User-Agent": USER_AGENT,
       },
-      body: JSON.stringify(stages),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       throw new Error(`Query API error: HTTP ${response.status}`);
     }
-    return (await response.json()) as AggregateResponse;
+    return (await response.json()) as T;
   }
 
   private validatePagination(options: QueryFacetOptions): void {
