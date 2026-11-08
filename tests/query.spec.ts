@@ -31,6 +31,14 @@ describe("Query API", () => {
     });
 
     expect(result).toEqual(data);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body as string)).toEqual([
+      {
+        $match: { countries_tags: "en:france", nutriscore_score: { $gte: 3 } },
+      },
+      { $group: { _id: "$brands_tags" } },
+      { $skip: 20 },
+      { $limit: 10 },
+    ]);
   });
 
   it("returns the distinct facet count from the mocked API response", async () => {
