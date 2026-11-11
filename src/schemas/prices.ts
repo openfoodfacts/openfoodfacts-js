@@ -1245,6 +1245,7 @@ export interface components {
             osm_version_date?: string | null;
             /** Format: uri */
             website_url?: string | null;
+            tags?: components["schemas"]["TagsEnum"][];
             price_count?: number;
             user_count?: number;
             product_count?: number;
@@ -1300,6 +1301,7 @@ export interface components {
             osm_version_date?: string | null;
             /** Format: uri */
             website_url?: string | null;
+            tags?: components["schemas"]["TagsEnum"][];
             price_count?: number;
             user_count?: number;
             product_count?: number;
@@ -2458,6 +2460,12 @@ export interface components {
         Status: {
             status: string;
         };
+        /**
+         * @description * `price-tag-barcode-internal` - price-tag-barcode-internal
+         *     * `receipt-barcode-printed` - receipt-barcode-printed
+         * @enum {string}
+         */
+        TagsEnum: "price-tag-barcode-internal" | "receipt-barcode-printed";
         TotalStats: {
             price_count?: number;
             price_type_product_code_count?: number;
@@ -2862,6 +2870,8 @@ export interface operations {
                 price_count__lte?: number;
                 /** @description Number of results to return per page. */
                 size?: number;
+                tags__contains?: string;
+                tags__not_contains?: string;
                 /**
                  * @description * `OSM` - OSM
                  *     * `ONLINE` - ONLINE
@@ -4634,6 +4644,8 @@ export interface operations {
                 brands_tags__contains?: string;
                 categories_tags__contains?: string;
                 code?: string;
+                /** @description Multiple values may be separated by commas. */
+                code__in?: string[];
                 creator?: string;
                 ecoscore_grade?: string;
                 labels_tags__contains?: string;
