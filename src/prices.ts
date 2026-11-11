@@ -1,4 +1,4 @@
-import openapiFetchCreateClient from "openapi-fetch";
+import openapiFetchCreateClient, { createQuerySerializer } from "openapi-fetch";
 import { unwrapCjsDefault } from "./interop-workaround.js";
 import type { components, paths } from "./schemas/prices.js";
 import { USER_AGENT } from "./consts.js";
@@ -7,6 +7,24 @@ import type { FetchFn } from "./types.js";
 
 // https://github.com/rolldown/tsdown/issues/1054
 const createClient = unwrapCjsDefault(openapiFetchCreateClient);
+
+const defaultQuerySerializer = createQuerySerializer();
+
+function isCommaSeparatedFilter(name: string): boolean {
+  return name.endsWith("__in") || name.endsWith("__overlap");
+}
+
+function serializePricesQuery(query: Record<string, unknown>): string {
+  const preparedQuery: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(query)) {
+    if (Array.isArray(value) && isCommaSeparatedFilter(name)) {
+      preparedQuery[name] = value.join(",");
+    } else {
+      preparedQuery[name] = value;
+    }
+  }
+  return defaultQuerySerializer(preparedQuery);
+}
 
 type GetPricesQuery = paths["/api/v1/prices"]["get"]["parameters"]["query"];
 
@@ -112,6 +130,7 @@ export class PricesApi {
         Authorization: `Bearer ${options?.authToken}`,
         "User-Agent": USER_AGENT,
       },
+      querySerializer: serializePricesQuery,
     });
   }
 
