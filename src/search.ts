@@ -56,6 +56,32 @@ export class SearchApi {
     });
   }
 
+  /**
+   * Normalizes a search result by ensuring `hits` is always an array.
+   *
+   * If the API returns a 200 response with a missing or non-array `hits`
+   * field (e.g. during a backend schema change or unexpected error format),
+   * this guard logs a warning and replaces `hits` with an empty array so
+   * callers never crash on `.hits.map(...)`.
+   *
+   * @param result - The raw result object from openapi-fetch.
+   * @returns The same result object, with `hits` guaranteed to be an array
+   *          if `data` is present.
+   */
+  private normalizeSearchResult<T extends { data?: unknown }>(result: T): T {
+    if (
+      result.data != null &&
+      !Array.isArray((result.data as { hits?: unknown }).hits)
+    ) {
+      console.warn(
+        "SearchApi: response missing 'hits' field — returning empty array as fallback",
+        result.data,
+      );
+      result.data = { ...(result.data as object), hits: [] } as typeof result.data;
+    }
+    return result;
+  }
+
   async getDocument(identifier: string, query?: DocumentQuery) {
     return this.client.GET("/document/{identifier}", {
       params: { path: { identifier }, query },
@@ -63,13 +89,15 @@ export class SearchApi {
   }
 
   async search(body: SearchBody) {
-    return this.client.POST("/search", {
+    const result = await this.client.POST("/search", {
       body: body as unknown as RawSearchBody,
     });
+    return this.normalizeSearchResult(result);
   }
 
   async searchGet(query: SearchQuery) {
-    return this.client.GET("/search", { params: { query } });
+    const result = await this.client.GET("/search", { params: { query } });
+    return this.normalizeSearchResult(result);
   }
 
   async autocomplete(query: AutocompleteQuery) {
