@@ -69,6 +69,9 @@ import type {
   ProductDataType,
   ProductDataSection,
   ProductImageUploadParams as ProductImageUploadParamsV3,
+  ProductUpdateV3,
+  NutritionInputSetV3,
+  NutritionSourceV3,
   ProductQuery as ProductQueryV3,
   Product as ProductV3,
   ProductState as ProductStateV3,
@@ -83,6 +86,9 @@ export type {
   ProductDataType,
   ProductDataSection,
   ProductImageUploadParamsV3,
+  ProductUpdateV3,
+  NutritionInputSetV3,
+  NutritionSourceV3,
   ProductQueryV3,
   ProductV3,
   ProductStateV3,
@@ -537,6 +543,14 @@ export class OpenFoodFacts {
     tagOrTagId: string,
     query?: TagKnowledgePanelsQuery,
   ) => this.apiv3.getTagKnowledgePanels(tagtype, tagOrTagId, query);
+
+  /**
+   * Saves product data using the V3 API.
+   * @param code - The barcode of the product
+   * @param product - The product data to update
+   */
+  saveProductV3 = (code: string, product: ProductUpdateV3) =>
+    this.apiv3.saveProductV3(code, product);
 
   /**
    * Adds or edits a product using the V2 API
