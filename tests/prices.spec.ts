@@ -44,12 +44,16 @@ describe("Prices Wrapper", () => {
       fetchMock.mockResolvedValue(mockResponse({ items: [] }));
       await client.getPrices({
         product_code__in: ["111", "222"],
+        product__categories_tags__overlap: [["en:breads"], ["en:cheeses"]],
         proof__type: ["PRICE_TAG", "RECEIPT"],
       });
 
       const request: Request = fetchMock.mock.calls[0][0];
       const url = new URL(request.url);
       expect(url.searchParams.getAll("product_code__in")).toEqual(["111,222"]);
+      expect(
+        url.searchParams.getAll("product__categories_tags__overlap"),
+      ).toEqual(["en:breads,en:cheeses"]);
       expect(url.searchParams.getAll("proof__type")).toEqual([
         "PRICE_TAG",
         "RECEIPT",
