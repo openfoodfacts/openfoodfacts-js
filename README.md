@@ -70,6 +70,26 @@ const distinctBrandCount = await client.query.countFacetValues("brands_tags", {
 
 These methods use only the query service's supported `$match`, `$group`, `$limit`, `$skip`, and `$count` stages. Filters accept scalar values or the supported `$ne`, `$lt`, `$lte`, `$gt`, `$gte`, `$all`, `$in`, and `$nin` operators. For the existing Product Opener endpoints that return predefined facet values, use `client.getFacet()` and `client.getFacetValue()`.
 
+For product queries and custom aggregation pipelines, use the query service directly:
+
+```ts
+const filter = { countries_tags: "en:france" };
+const products = await client.query.find({
+  filter,
+  projection: { code: true, product_name: true },
+  sort: [["last_modified_t", -1]],
+  skip: 20,
+  limit: 10,
+});
+const count = await client.query.count(filter);
+const groups = await client.query.aggregate([
+  { $match: filter },
+  { $group: { _id: "$brands_tags" } },
+  { $skip: 20 },
+  { $limit: 10 },
+]);
+```
+
 ## Development
 
 ### Prerequisites
