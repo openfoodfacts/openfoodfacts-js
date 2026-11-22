@@ -45,6 +45,42 @@ export type ImageSelectionData = NonNullable<
   >["content"]["application/json"]["product"]
 >["images"];
 
+export type NutritionSourceV3 =
+  | "packaging"
+  | "manufacturer"
+  | "usda"
+  | "estimate";
+
+export type NutritionInputSetV3 = {
+  preparation: "as_sold" | "prepared" | (string & {});
+  per: "100g" | "100ml" | "serving" | (string & {});
+  source: NutritionSourceV3 | (string & {});
+  nutrients: Record<string, { value_string: string; unit?: string }>;
+};
+
+type BaseProductUpdateV3 = NonNullable<
+  NonNullable<
+    operations["patch-api-v3-product-code"]["requestBody"]
+  >["content"]["application/json"]["product"]
+>;
+
+type RemoveIndexSignature<T> = {
+  [K in keyof T as string extends K
+    ? never
+    : number extends K
+      ? never
+      : symbol extends K
+        ? never
+        : K]: T[K];
+};
+
+export type ProductUpdateV3 = RemoveIndexSignature<BaseProductUpdateV3> & {
+  [key: string]: unknown;
+  nutrition?: {
+    input_sets: NutritionInputSetV3[];
+  };
+};
+
 export type ProductDataSection = {
   created_t: number;
   creator: string;
@@ -239,6 +275,14 @@ export class ProductOpenerApiV3 {
     return await this.client.PATCH("/api/v3/product/{code}", {
       params: { path: { code: barcode } },
       body: { fields: "updated", product: { images } },
+    });
+  }
+
+  /** Saves v3 product data, including nutrition input sets. */
+  async saveProductV3(code: string, product: ProductUpdateV3) {
+    return await this.client.PATCH("/api/v3/product/{code}", {
+      params: { path: { code } },
+      body: { fields: "updated", product },
     });
   }
 

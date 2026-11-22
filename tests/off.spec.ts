@@ -23,8 +23,8 @@ describe("OpenFoodFacts", () => {
   // Helper functions
   const mockV2Success = (data: any) =>
     vi.spyOn(productsApi.apiv2.client, "GET").mockResolvedValue({ data });
-  const mockV3Success = (data: any) =>
-    vi.spyOn(productsApi.apiv3.client, "GET").mockResolvedValue({ data });
+  const mockV3Success = (data: any, method: "GET" | "PATCH" = "GET") =>
+    vi.spyOn(productsApi.apiv3.client, method).mockResolvedValue({ data });
 
   const mockV2Error = (error: Error) =>
     vi.spyOn(productsApi.apiv2.client, "GET").mockRejectedValue(error);
@@ -321,6 +321,131 @@ describe("OpenFoodFacts", () => {
       if (data.status !== "success") return; // for type narrowing
 
       expect(data.product).toEqual(productV3MockData.product);
+    });
+  });
+
+  describe("saveProductV3", () => {
+    it("should save an as_sold packaging nutrition set", async () => {
+      const product = {
+        nutrition: {
+          input_sets: [
+            {
+              preparation: "as_sold",
+              per: "100g",
+              source: "packaging",
+              nutrients: { sugars: { value_string: "5", unit: "g" } },
+            },
+          ],
+        },
+      };
+      const mockData = { status: "success" };
+      mockV3Success(mockData, "PATCH");
+
+      await productsApi.saveProductV3(testBarcode, product);
+
+      expect(productsApi.apiv3.client.PATCH).toHaveBeenCalledWith(
+        "/api/v3/product/{code}",
+        {
+          params: { path: { code: testBarcode } },
+          body: { fields: "updated", product },
+        },
+      );
+    });
+
+    it("should save a prepared serving nutrition set", async () => {
+      const product = {
+        nutrition: {
+          input_sets: [
+            {
+              preparation: "prepared",
+              per: "serving",
+              source: "manufacturer",
+              nutrients: { proteins: { value_string: "10", unit: "g" } },
+            },
+          ],
+        },
+      };
+      mockV3Success({ status: "success" }, "PATCH");
+
+      await productsApi.saveProductV3(testBarcode, product);
+
+      expect(productsApi.apiv3.client.PATCH).toHaveBeenCalledWith(
+        "/api/v3/product/{code}",
+        {
+          params: { path: { code: testBarcode } },
+          body: { fields: "updated", product },
+        },
+      );
+    });
+
+    it("should preserve special nutrient value strings", async () => {
+      const product = {
+        nutrition: {
+          input_sets: [
+            {
+              preparation: "as_sold",
+              per: "100g",
+              source: "packaging",
+              nutrients: {
+                sugars: { value_string: "<1", unit: "g" },
+                salt: { value_string: "~5" },
+              },
+            },
+          ],
+        },
+      };
+      mockV3Success({ status: "success" }, "PATCH");
+
+      await productsApi.saveProductV3(testBarcode, product);
+
+      expect(productsApi.apiv3.client.PATCH).toHaveBeenCalledWith(
+        "/api/v3/product/{code}",
+        {
+          params: { path: { code: testBarcode } },
+          body: { fields: "updated", product },
+        },
+      );
+    });
+
+    it("should pass through non-nutrition product fields", async () => {
+      const product = { product_name: "Test Product", quantity: "500 g" };
+      mockV3Success({ status: "success" }, "PATCH");
+
+      await productsApi.saveProductV3(testBarcode, product);
+
+      expect(productsApi.apiv3.client.PATCH).toHaveBeenCalledWith(
+        "/api/v3/product/{code}",
+        {
+          params: { path: { code: testBarcode } },
+          body: { fields: "updated", product },
+        },
+      );
+    });
+
+    it("should not add a unit when a nutrient has none", async () => {
+      const product = {
+        nutrition: {
+          input_sets: [
+            {
+              preparation: "as_sold",
+              per: "100g",
+              source: "estimate",
+              nutrients: { sugars: { value_string: "2" } },
+            },
+          ],
+        },
+      };
+      mockV3Success({ status: "success" }, "PATCH");
+
+      await productsApi.saveProductV3(testBarcode, product);
+
+      expect(productsApi.apiv3.client.PATCH).toHaveBeenCalledWith(
+        "/api/v3/product/{code}",
+        {
+          params: { path: { code: testBarcode } },
+          body: { fields: "updated", product },
+        },
+      );
     });
   });
 
