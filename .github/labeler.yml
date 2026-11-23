@@ -9,23 +9,72 @@ GitHub Actions:
   - changed-files:
       - any-glob-to-any-file: "src/schemas/folksonomy.ts"
       - any-glob-to-any-file: "src/folksonomy.ts"
+      - any-glob-to-any-file: "tests/folksonomy.spec.ts"
 
 💸 Prices:
   - changed-files:
       - any-glob-to-any-file: "src/schemas/prices.ts"
       - any-glob-to-any-file: "src/prices.ts"
+      - any-glob-to-any-file: "tests/prices.spec.ts"
 
 🤖 Robotoff:
   - changed-files:
       - any-glob-to-any-file: "src/schemas/robotoff.ts"
       - any-glob-to-any-file: "src/robotoff.ts"
+      - any-glob-to-any-file: "tests/robotoff.spec.ts"
 
 🔍 Search:
   - changed-files:
       - any-glob-to-any-file: "src/schemas/search.ts"
       - any-glob-to-any-file: "src/search.ts"
+      - any-glob-to-any-file: "tests/search.spec.ts"
 
 🛡️ Nutri-Patrol:
   - changed-files:
       - any-glob-to-any-file: "src/schemas/nutripatrol.ts"
       - any-glob-to-any-file: "src/nutripatrol.ts"
+      - any-glob-to-any-file: "tests/nutripatrol.spec.ts"
+
+openfoodfacts-query:
+  - changed-files:
+      - any-glob-to-any-file: "src/schemas/query.ts"
+      - any-glob-to-any-file: "src/query.ts"
+      - any-glob-to-any-file: "tests/query.spec.ts"
+
+Knowledge Panels for Facets:
+  - changed-files:
+      - any-glob-to-any-file: "src/schemas/facets-kp.ts"
+      - any-glob-to-any-file: "src/facets-kp.ts"
+
+Facets:
+  - changed-files:
+      - any-glob-to-any-file: "src/facets.ts"
+      - any-glob-to-any-file: "src/facets-kp.ts"
+      - any-glob-to-any-file: "src/schemas/facets-kp.ts"
+
+knowledge panels:
+  - changed-files:
+      - any-glob-to-any-file: "src/knowledgepanels.ts"
+      - any-glob-to-any-file: "src/facets-kp.ts"
+      - any-glob-to-any-file: "src/schemas/facets-kp.ts"
+
+taxonomies:
+  - changed-files:
+      - any-glob-to-any-file: "src/taxonomy/**/*"
+
+API v3:
+  - changed-files:
+      - any-glob-to-any-file: "src/off-v3.ts"
+      - any-glob-to-any-file: "src/schemas/server/v3.ts"
+
+Error handling:
+  - changed-files:
+      - any-glob-to-any-file: "src/error.ts"
+
+test:
+  - changed-files:
+      - any-glob-to-any-file: "tests/**/*"
+
+📚 Documentation:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.md"
