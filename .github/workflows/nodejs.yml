@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install and enable Corepack
         run: |
@@ -24,7 +24,7 @@ jobs:
           corepack enable
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # ratchet:actions/setup-node@v7.1.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install and enable Corepack
         run: |
@@ -59,7 +59,7 @@ jobs:
           corepack enable
 
       - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # ratchet:actions/setup-node@v7.1.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: lts/*
           cache: "yarn"
@@ -74,12 +74,12 @@ jobs:
         run: yarn test --coverage
 
       - name: Write coverage report to GitHub Summary
-        uses: livewing/lcov-job-summary@f61677de6678fb6f860c8d1d35c5b4540b64b1d3 # ratchet:livewing/lcov-job-summary@v1.3.0
+        uses: livewing/lcov-job-summary@v1.3.0
         with:
           lcov: "coverage/lcov.info"
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # ratchet:codecov/codecov-action@v7.1.1
+        uses: codecov/codecov-action@v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -92,7 +92,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # ratchet:actions/checkout@v7.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install and enable Corepack
         run: |
@@ -100,7 +100,7 @@ jobs:
           corepack enable
 
       - name: Setup Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # ratchet:actions/setup-node@v7.1.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version: lts/*
           cache: "yarn"
@@ -115,7 +115,7 @@ jobs:
         run: yarn build:docs
 
       - name: Upload docs
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # ratchet:actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: "docs"
 
@@ -139,4 +139,4 @@ jobs:
       # Deploy documentation to GitHub Pages
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # ratchet:actions/deploy-pages@v5
+        uses: actions/deploy-pages@v5.0.1
