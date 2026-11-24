@@ -40,6 +40,26 @@ describe("Prices Wrapper", () => {
       expect(result.data).toEqual(mockData);
     });
 
+    it("should join __in lists with commas and repeat other lists", async () => {
+      fetchMock.mockResolvedValue(mockResponse({ items: [] }));
+      await client.getPrices({
+        product_code__in: ["111", "222"],
+        product__categories_tags__overlap: [["en:breads"], ["en:cheeses"]],
+        proof__type: ["PRICE_TAG", "RECEIPT"],
+      });
+
+      const request: Request = fetchMock.mock.calls[0][0];
+      const url = new URL(request.url);
+      expect(url.searchParams.getAll("product_code__in")).toEqual(["111,222"]);
+      expect(
+        url.searchParams.getAll("product__categories_tags__overlap"),
+      ).toEqual(["en:breads,en:cheeses"]);
+      expect(url.searchParams.getAll("proof__type")).toEqual([
+        "PRICE_TAG",
+        "RECEIPT",
+      ]);
+    });
+
     it("should handle error when fetching prices", async () => {
       const errorData = { detail: "Internal Server Error" };
       fetchMock.mockResolvedValue(mockResponse(errorData, false, 500));
@@ -233,6 +253,16 @@ describe("Prices Wrapper", () => {
       fetchMock.mockResolvedValue(mockResponse(mockData));
       const result = await client.getProducts();
       expect(result.data ?? result).toBeDefined();
+    });
+
+    it("should send code__in as one comma-separated value", async () => {
+      fetchMock.mockResolvedValue(mockResponse({ items: [] }));
+      await client.getProducts({ code__in: ["111", "222"], size: 2 });
+
+      const request: Request = fetchMock.mock.calls[0][0];
+      const url = new URL(request.url);
+      expect(url.searchParams.getAll("code__in")).toEqual(["111,222"]);
+      expect(url.searchParams.get("size")).toBe("2");
     });
 
     it("should call getProduct successfully", async () => {
