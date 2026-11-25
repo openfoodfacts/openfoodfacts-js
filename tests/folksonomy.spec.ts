@@ -216,5 +216,22 @@ describe("Folksonomy Wrapper", () => {
         "Auth token is required to perform this action",
       );
     });
+    it("should not include Authorization header when unauthenticated", async () => {
+      const clientWithoutToken = new Folksonomy(fetchMock);
+      fetchMock.mockResolvedValue(mockResponse([]));
+      await clientWithoutToken.getKeys();
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [req, init] = fetchMock.mock.calls[0];
+      const headers =
+        req instanceof Request ? req.headers : new Headers(init?.headers);
+      expect(headers.get("authorization")).toBeNull();
+    });
+
+    it("should throw an error when authToken is null", () => {
+      expect(() => new Folksonomy(fetchMock, { authToken: null })).toThrow(
+        "authToken cannot be null",
+      );
+    });
   });
 });

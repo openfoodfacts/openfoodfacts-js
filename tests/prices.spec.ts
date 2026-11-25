@@ -505,5 +505,25 @@ describe("Prices Wrapper", () => {
       const result = await client.getStats();
       expect(result.data ?? result).toBeDefined();
     });
+    it("should not include Authorization header when unauthenticated", async () => {
+      fetchMock.mockResolvedValue(mockResponse({ items: [] }));
+      await client.getPrices({ product_code: "12345" });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [req, init] = fetchMock.mock.calls[0];
+      const headers =
+        req instanceof Request ? req.headers : new Headers(init?.headers);
+      expect(headers.get("authorization")).toBeNull();
+    });
+
+    it("should throw an error when authToken is null", () => {
+      expect(
+        () =>
+          new PricesApi(fetchMock, {
+            baseUrl: "https://prices.openfoodfacts.org",
+            authToken: null,
+          }),
+      ).toThrow("authToken cannot be null");
+    });
   });
 });
