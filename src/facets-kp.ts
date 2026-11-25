@@ -1,5 +1,6 @@
 import openapiFetchCreateClient from "openapi-fetch";
 import { unwrapCjsDefault } from "./interop-workaround.js";
+import { USER_AGENT } from "./consts.js";
 import type { KnowledgePanel } from "./knowledgepanels.js";
 import type { paths } from "./schemas/facets-kp.js";
 import type { FetchFn } from "./types.js";
@@ -22,12 +23,15 @@ export class FacetsKp {
   readonly baseUrl: string;
   readonly client: ReturnType<typeof createClient<paths>>;
 
-  constructor(fetch: FetchFn, { baseUrl }: { baseUrl?: string }) {
+  constructor(fetch: FetchFn, options: { baseUrl?: string } = {}) {
     this.fetch = fetch;
-    this.baseUrl = baseUrl || "https://facets-kp.openfoodfacts.org";
+    this.baseUrl = options.baseUrl || "https://facets-kp.openfoodfacts.org";
     this.client = createClient<paths>({
       fetch: this.fetch,
       baseUrl: this.baseUrl,
+      headers: {
+        "User-Agent": USER_AGENT,
+      },
     });
   }
 
